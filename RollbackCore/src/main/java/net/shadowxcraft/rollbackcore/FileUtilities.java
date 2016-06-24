@@ -1,6 +1,21 @@
 /**
-* Copyright (C) 2016 ShadowXCraft Server - All rights reserved.
-*/
+ * Copyright (C) 2016 lizardfreak321 <lizardfreak7@gmail.com>
+ * 
+ * This file is part of RollbackCore
+ * 
+ * RollbackCore is free software: you can redistribute it and/or modify it
+ * under the terms of the GNU Lesser General Public License as published by the
+ * Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License
+ * for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
 
 package net.shadowxcraft.rollbackcore;
 
@@ -55,12 +70,12 @@ public class FileUtilities {
 		writeShort(out, storedValue);
 	}
 
-	//public static void readIDAndData(InputStream in) throws IOException {
-	//	int storedValue = readShort(in);
-	//	System.out.println("ID: " + (storedValue >> 4));
-	//	System.out.println("DATA: " + (storedValue & 15));
-	//	System.out.println("\n");
-	//}
+	// public static void readIDAndData(InputStream in) throws IOException {
+	// int storedValue = readShort(in);
+	// System.out.println("ID: " + (storedValue >> 4));
+	// System.out.println("DATA: " + (storedValue & 15));
+	// System.out.println("\n");
+	// }
 
 	// DEBUG USE ONLY. WILL SPAM CONSOLE!
 	public static void displayEntireFile(File file) {

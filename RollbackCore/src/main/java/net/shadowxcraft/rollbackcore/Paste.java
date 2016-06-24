@@ -1,6 +1,21 @@
 /**
-* Copyright (C) 2016 ShadowXCraft Server - All rights reserved.
-*/
+ * Copyright (C) 2016 lizardfreak321 <lizardfreak7@gmail.com>
+ * 
+ * This file is part of RollbackCore
+ * 
+ * RollbackCore is free software: you can redistribute it and/or modify it
+ * under the terms of the GNU Lesser General Public License as published by the
+ * Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License
+ * for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
 
 package net.shadowxcraft.rollbackcore;
 
@@ -78,7 +93,7 @@ public class Paste extends RollbackOperation {
 	}
 
 	/**
-	 * The legacy constructor for backwards compatibility.
+	 * Used to create a new paste operation instance that can be used to paste the file.
 	 * 
 	 * @param x
 	 *            Where the min-x of the paste will be pasted.
@@ -119,11 +134,17 @@ public class Paste extends RollbackOperation {
 		return numberOfTasks;
 	}
 
+	/**
+	 * Runs the paste operation.
+	 */
 	@Override
 	public void run() {
 		paste();
 	}
 
+	/**
+	 * Runs the paste operation.
+	 */
 	public final void paste() {
 		if (startPasteTime == -1)
 			startPasteTime = System.nanoTime();
@@ -181,7 +202,7 @@ public class Paste extends RollbackOperation {
 		return true;
 	}
 
-	public final boolean readFile() {
+	private final boolean readFile() {
 		try {
 			// In case the file they are trying to read is in of date or too
 			// new.

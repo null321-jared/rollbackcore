@@ -1,5 +1,20 @@
 /**
- * Copyright (C) 2016 ShadowXCraft Server - All rights reserved.
+ * Copyright (C) 2016 lizardfreak321 <lizardfreak7@gmail.com>
+ * 
+ * This file is part of RollbackCore
+ * 
+ * RollbackCore is free software: you can redistribute it and/or modify it
+ * under the terms of the GNU Lesser General Public License as published by the
+ * Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License
+ * for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
 package net.shadowxcraft.rollbackcore;
@@ -123,7 +138,7 @@ public class Rollback {
 	 *            console, and a player for a player.
 	 * @see Copy
 	 * 
-	 * @deprecated Ever since version 1.3, this method does not increase performance, instead it
+	 * @deprecated Ever since version 2.0, this method does not increase performance, instead it
 	 *             just makes it unnecceceraly complicated.
 	 */
 	public static final void copyDistributed(int minX, int minY, int minZ, int maxX, int maxY, int maxZ, World world,
@@ -303,7 +318,7 @@ public class Rollback {
 	 * @param sender
 	 *            The person who will get status messages. Use null for no messsages, and
 	 *            consoleSender for console.
-	 * @deprecated Ever since version 1.3, due to the performance improvements this method is no
+	 * @deprecated Ever since version 2.0, due to the performance improvements this method is no
 	 *             longer needed. Only use it for backwards compatibility if your plugin used
 	 *             distributed pastes.
 	 */
@@ -343,7 +358,7 @@ public class Rollback {
 	 * @param sender
 	 *            The person who will get status messages. Use null for no messsages, and
 	 *            consoleSender for console.
-	 * @deprecated Ever since version 1.3, due to the performance improvements this method is no
+	 * @deprecated Ever since version 2.0, due to the performance improvements this method is no
 	 *             longer needed. Only use it for backwards compatibility if your plugin used
 	 *             distributed pastes.
 	 */
