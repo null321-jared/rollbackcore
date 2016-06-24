@@ -1,0 +1,14 @@
+Config:
+  rollback:
+    # Sets the time (in miliseconds) at which the plugin stops doing whatever it's doing
+    # and continues next tick. Each tick is 50 miliseconds, so it should be below that.
+    # The default time is 25ms since that is half of a tick. If your server lags,
+    # try lowering this value.
+    targettime: 25
+  arenas:
+    examplearena:
+      x: 1
+      y: 1
+      z: 1
+# Don't change this, it may cause issues in the future if the config changes!
+configversion: 1.0

@@ -1,0 +1,15 @@
+name: RollbackCore
+main: net.shadowxcraft.rollbackcore.Main
+version: 2.0
+softdepend: [WorldEdit]
+commands:
+  rollback:
+    description: Used to save and load arenas.
+    usage: /rollback <paste/copy/reload>
+    description: Copies/Saves a region.
+    permission: rollback.admin
+    aliases: [rb, /rollback]
+permissions:
+    rollback.admin:
+        description: Used to save and load arenas.
+        default: op
