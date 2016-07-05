@@ -59,7 +59,7 @@ public class ClearEntities {
 	 * @throws IllegalArgumentException
 	 *             If the worlds are not the same.
 	 */
-	ClearEntities(Location min, Location max, List<EntityType> allowedEntities, boolean quick)
+	public ClearEntities(Location min, Location max, List<EntityType> allowedEntities, boolean quick)
 			throws IllegalArgumentException {
 
 		if (!min.getWorld().equals(max.getWorld())) {

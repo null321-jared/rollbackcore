@@ -112,7 +112,7 @@ public class Commands implements CommandExecutor {
 			sender.sendMessage(prefix + "Importing...");
 			WatchDogRegion.importWatchDog(args[2], sender, Main.prefix);
 		} else {
-			sender.sendMessage(prefix + "Usage: /rollback watchdog <rollback|create>");
+			sender.sendMessage(prefix + "Usage: /rollback watchdog <rollback|create|import|export>");
 		}
 	}
 
