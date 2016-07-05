@@ -40,7 +40,7 @@ public class WDRollbackEndEvent extends RollbackEvent {
 	}
 
 	/**
-	 * @return the region that the rollback ended in.
+	 * @return The region that the rollback ended in.
 	 */
 	public WatchDogRegion getWatchDog() {
 		return wd;

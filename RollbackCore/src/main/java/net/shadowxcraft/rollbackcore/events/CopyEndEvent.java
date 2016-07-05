@@ -40,7 +40,7 @@ public class CopyEndEvent extends RollbackEvent {
 	}
 
 	/**
-	 * @return the instance of the copy operation that completed
+	 * @return The instance of the copy operation that completed.
 	 */
 	public Copy getCopy() {
 		return copy;

@@ -19,6 +19,9 @@
 
 package net.shadowxcraft.rollbackcore;
 
+import java.util.Arrays;
+import java.util.List;
+
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.World;
@@ -113,7 +116,6 @@ public class Commands implements CommandExecutor {
 		}
 	}
 
-	@SuppressWarnings("deprecation")
 	private final void pasteCommand(CommandSender sender, String args[]) {
 		if (args.length == 2) {
 			// For the command /rollback paste <fileName>
@@ -121,27 +123,14 @@ public class Commands implements CommandExecutor {
 				Rollback.paste((Player) sender, args[1]);
 			else
 				sender.sendMessage(prefix + "Only players can use this command!");
-		} else if (args.length == 6) {
-			// For the command "/rollback paste <x> <y> <z> <world> <file>"
-			// Requires no worldedit.
-			World world = plugin.getServer().getWorld(args[4]);
-			if (world == null) {
-				sender.sendMessage(prefix + "Unknown world!");
-			} else {
-				try {
-					Rollback.prePaste(Integer.parseInt(args[1]), Integer.parseInt(args[2]), Integer.parseInt(args[3]),
-							plugin.getServer().getWorld(args[4]), args[5], sender);
-				} catch (NumberFormatException e) {
-					sender.sendMessage(prefix + ChatColor.RED + " You must specify an integer for the time!");
-					sender.sendMessage(prefix
-							+ "Usage: /rollback paste [<x> <y> <z> <world>] <file> [<clearEntities> <ignoreAir>]");
-				}
-			}
-		} else if (args.length == 8) {
+		} else if (args.length >= 6 && args.length <= 8) {
 			// For the command:
-			// "/rollback paste <x> <y> <z> <world> <file> <clearEntites> <ignoreAir>"
+			// "/rollback paste <x> <y> <z> <world> <file> -clearEntites -ignoreAir"
 			// Requires no worldedit.
 			Location min;
+			List<String> argsList = Arrays.asList(args);
+			for (int i = 0; i < argsList.size(); i++)
+				argsList.set(i, argsList.get(i).toLowerCase());
 			try {
 				World world = plugin.getServer().getWorld(args[4]);
 				if (world == null) {
@@ -149,17 +138,17 @@ public class Commands implements CommandExecutor {
 				} else {
 					min = new Location(world, Integer.parseInt(args[1]), Integer.parseInt(args[2]),
 							Integer.parseInt(args[3]));
-					new Paste(min, args[5], sender, Boolean.parseBoolean(args[6]), Boolean.parseBoolean(args[7]),
-							prefix).run();
+					new Paste(min, args[5], sender, argsList.contains("-clearentities"),
+							argsList.contains("-ignoreair"), prefix).run();
 				}
 			} catch (NumberFormatException e) {
 				sender.sendMessage(prefix + ChatColor.RED + " You must specify an integer for the time!");
 				sender.sendMessage(
-						prefix + "Usage: /rollback paste [<x> <y> <z> <world>] <file> [<clearEntities> <ignoreAir>]");
+						prefix + "Usage: /rollback paste [<x> <y> <z> <world>] <file> [-clearEntities -ignoreAir]");
 			}
 		} else {
 			sender.sendMessage(
-					prefix + "Usage: /rollback paste [<x> <y> <z> <world>] <file> [<clearEntities> <ignoreAir>]");
+					prefix + "Usage: /rollback paste [<x> <y> <z> <world>] <file> [-clearEntities -ignoreAir]");
 		}
 	}
 

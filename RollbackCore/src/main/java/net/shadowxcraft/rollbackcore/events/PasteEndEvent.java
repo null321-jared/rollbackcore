@@ -43,7 +43,7 @@ public class PasteEndEvent extends RollbackEvent {
 	}
 
 	/**
-	 * @return the instance of the paste operation that completed
+	 * @return The instance of the paste operation that completed.
 	 */
 	public Paste getPaste() {
 		return paste;

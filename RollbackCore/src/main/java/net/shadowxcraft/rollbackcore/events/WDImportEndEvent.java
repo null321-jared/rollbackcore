@@ -50,7 +50,7 @@ public class WDImportEndEvent extends RollbackEvent {
 	}
 
 	/**
-	 * @return the region that the blocks were imported in to.
+	 * @return The region that the blocks were imported in to.
 	 */
 	public WatchDogRegion getWatchDog() {
 		return wd;

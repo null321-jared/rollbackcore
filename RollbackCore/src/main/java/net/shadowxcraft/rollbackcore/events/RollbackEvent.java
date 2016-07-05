@@ -28,7 +28,7 @@ public abstract class RollbackEvent extends Event {
 	protected EndStatus endStatus;
 
 	/**
-	 * @return the number of nanoseconds the operation was running for.
+	 * @return The number of nanoseconds the operation was running for.
 	 */
 	public long getNanoSecondsTaken() {
 		return nanoSecondsTaken;

@@ -248,7 +248,8 @@ public class Paste extends RollbackOperation {
 	public final void end(EndStatus endStatus) {
 		min.getWorld().setAutoSave(originalWorldSaveSetting);
 		try {
-			pasteTask.in.close();
+			if (pasteTask != null && pasteTask.in != null)
+				pasteTask.in.close();
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
