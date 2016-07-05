@@ -39,6 +39,9 @@ import net.shadowxcraft.rollbackcore.events.EndStatus;
 import net.shadowxcraft.rollbackcore.events.PasteEndEvent;
 
 /**
+ * This class is used to paste a saved rollbackcore copy file.
+ * 
+ * @see PasteEndEvent
  * @author lizardfreak321
  */
 public class Paste extends RollbackOperation {
@@ -145,7 +148,7 @@ public class Paste extends RollbackOperation {
 	/**
 	 * Runs the paste operation.
 	 */
-	public final void paste() {
+	protected final void paste() {
 		if (startPasteTime == -1)
 			startPasteTime = System.nanoTime();
 		// Checks if there are any currently running pastes of the exact same thing.
@@ -240,12 +243,12 @@ public class Paste extends RollbackOperation {
 	/**
 	 * Ends the paste task if it is done or not. Sets everything back to the way it should be and
 	 * closes open resources.
-	 * 
-	 * @param proceed
-	 *            If it should move on to the next paste in a distributed paste format. Use false if
-	 *            you want to completely end it.
 	 */
-	public final void end(EndStatus endStatus) {
+	public final void kill() {
+		end(EndStatus.FAIL_EXERNAL_TERMONATION);
+	}
+
+	protected final void end(EndStatus endStatus) {
 		min.getWorld().setAutoSave(originalWorldSaveSetting);
 		try {
 			if (pasteTask != null && pasteTask.in != null)

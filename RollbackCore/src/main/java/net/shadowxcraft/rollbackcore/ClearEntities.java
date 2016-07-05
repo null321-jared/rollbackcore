@@ -32,8 +32,9 @@ import net.shadowxcraft.rollbackcore.events.ClearEntitiesEndEvent;
 import net.shadowxcraft.rollbackcore.events.EndStatus;
 
 /**
- * This method is used to clear entities in a region.
+ * This class is used to clear entities in a region.
  * 
+ * @see ClearEntitiesEndEvent
  * @author lizardfreak321
  */
 public class ClearEntities {

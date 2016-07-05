@@ -38,6 +38,9 @@ import net.shadowxcraft.rollbackcore.events.CopyEndEvent;
 import net.shadowxcraft.rollbackcore.events.EndStatus;
 
 /**
+ * This class is used to save a region to a file that can be pasted later to rollback the region.
+ * 
+ * @see CopyEndEvent
  * @author lizardfreak321
  */
 public class Copy extends RollbackOperation {
@@ -132,6 +135,11 @@ public class Copy extends RollbackOperation {
 
 	}
 
+	/**
+	 * Cancels all of the running copy operations.
+	 * 
+	 * @return The number of operations cancelled.
+	 */
 	public static final int cancelAll() {
 		int numberOfTasks = runningCopies.size();
 		for (int i = 0; i < numberOfTasks; i++) {
@@ -140,13 +148,17 @@ public class Copy extends RollbackOperation {
 		return numberOfTasks;
 	}
 
+	/**
+	 * Runs the copy operation.
+	 */
 	@Override
 	public final void run() {
 		// Calls the copy method.
 		copy();
 	}
 
-	public final boolean copy() {
+	// The internal method to start the copy operation.
+	protected final boolean copy() {
 		startTime = System.nanoTime();
 		// Checks if there are any currently running pastes of the exact same thing.
 		for (Copy runningCopy : runningCopies) {
@@ -171,6 +183,7 @@ public class Copy extends RollbackOperation {
 		return true;
 	}
 
+	// Prepares the file and stream.
 	private final boolean initializeStream() {
 		// Initializes the file
 		file = new File(fileName + ".dat");
@@ -199,6 +212,7 @@ public class Copy extends RollbackOperation {
 		return true;
 	}
 
+	// Writes the initial data- Version, blocks, and size.
 	private final boolean startFile() {
 		// Writes the version so that the plugin can convert/reject incompatible
 		// versions.
@@ -224,6 +238,15 @@ public class Copy extends RollbackOperation {
 		return true;
 	}
 
+	/**
+	 * Forcefully ends the operation. Sets everything back to the way it should be and closes open
+	 * resources.
+	 */
+	public final void kill() {
+		end(EndStatus.FAIL_EXERNAL_TERMONATION);
+	}
+
+	// Ends it with that end status.
 	protected final void end(EndStatus endStatus) {
 		TaskManager.removeTask();
 

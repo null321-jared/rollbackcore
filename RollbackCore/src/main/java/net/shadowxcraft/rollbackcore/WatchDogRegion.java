@@ -57,6 +57,8 @@ import net.shadowxcraft.rollbackcore.events.WDRollbackEndEvent;
  * changes, and puts things back to the way they were when rollback is called.
  * 
  * @since 2.0
+ * @see WDRollbackEndEvent
+ * @see WDImportEndEvent
  * @author lizardfreak321
  */
 public class WatchDogRegion {
