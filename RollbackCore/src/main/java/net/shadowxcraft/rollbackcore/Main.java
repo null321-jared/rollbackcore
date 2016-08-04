@@ -19,13 +19,12 @@
 
 package net.shadowxcraft.rollbackcore;
 
-import org.bukkit.plugin.java.JavaPlugin;
-
-import net.shadowxcraft.rollbackcore.metrics.Metrics;
-
 import java.io.IOException;
 
 import org.bukkit.ChatColor;
+import org.bukkit.plugin.java.JavaPlugin;
+
+import net.shadowxcraft.rollbackcore.metrics.Metrics;
 
 public class Main extends JavaPlugin {
 

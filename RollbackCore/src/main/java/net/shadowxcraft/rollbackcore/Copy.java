@@ -84,20 +84,10 @@ public class Copy extends RollbackOperation {
 	/**
 	 * Used to schedule a copy.
 	 * 
-	 * @param minX
-	 *            The X value of the minimum location of the region.
-	 * @param minY
-	 *            The Y value of the minimum location of the region.
-	 * @param minZ
-	 *            The Z value of the minimum location of the region.
-	 * @param maxX
-	 *            The X value of the maximum location of the region.
-	 * @param maxY
-	 *            The X value of the maximum location of the region.
-	 * @param maxZ
-	 *            The Y value of the maximum location of the region.
-	 * @param world
-	 *            The world that the region is in.
+	 * @param min
+	 *            The location that contains data for the min location of the region.
+	 * @param max
+	 *            The location that contains data for the max location of the region.
 	 * @param fileName
 	 *            The fileName and directory of the folder that will contain the saved data.
 	 *            Recommended: Make a sub-folder in your Main.plugin and put them in there.
