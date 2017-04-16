@@ -26,7 +26,8 @@ public abstract class RollbackEvent extends Event {
 
 	protected long nanoSecondsTaken;
 	protected EndStatus endStatus;
-
+    private static final HandlerList HANDLERS = new HandlerList();
+	
 	/**
 	 * @return The number of nanoseconds the operation was running for.
 	 */
@@ -42,7 +43,11 @@ public abstract class RollbackEvent extends Event {
 	}
 
 	@Override
-	public HandlerList getHandlers() {
-		return new HandlerList();
-	}
+    public HandlerList getHandlers() {
+        return HANDLERS;
+    }
+
+    public static HandlerList getHandlerList() {
+        return HANDLERS;
+    }
 }
