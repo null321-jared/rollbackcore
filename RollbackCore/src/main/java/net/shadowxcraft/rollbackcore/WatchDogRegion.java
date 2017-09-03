@@ -412,7 +412,7 @@ public class WatchDogRegion {
 		WatchDogRegion tempRegion;
 
 		if (!file.exists()) {
-			new WDImportEndEvent(null, 0, 0, EndStatus.FILE_NO_SUCH_FILE, sender);
+			new WDImportEndEvent(null, 0, 0, EndStatus.FAIL_NO_SUCH_FILE, sender);
 			return null;
 		}
 

@@ -169,7 +169,7 @@ public class Commands implements CommandExecutor {
 	private final void worldArenaRollackCommand(CommandSender sender, String args[]) {
 		if (args.length == 2) {
 			int[] temp = Config.getArenaXYZ(args[1]);
-			Rollback.prePaste(temp[0], temp[1], temp[2], plugin.getServer().getWorld(args[1]), "arenas/" + args[1],
+			Rollback.prePaste(temp[0], temp[1], temp[2], plugin.getServer().getWorld(args[1]), "arenas/" + args[1] + ".dat",
 					sender);
 		} else {
 			sender.sendMessage(prefix + "Usage: /rollback arena <world>");

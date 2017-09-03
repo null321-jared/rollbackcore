@@ -100,6 +100,9 @@ public class Copy extends RollbackOperation {
 	public Copy(Location min, Location max, String fileName, CommandSender sender, String prefix) {
 		this.min = min;
 		this.max = max;
+		if (!fileName.endsWith(".dat")) {
+			fileName = Main.plugin.getDataFolder().getAbsolutePath() + "/saves/" + fileName + ".dat";
+		}
 		this.fileName = fileName;
 		this.sender = sender;
 		this.prefix = prefix;
@@ -176,7 +179,7 @@ public class Copy extends RollbackOperation {
 	// Prepares the file and stream.
 	private final boolean initializeStream() {
 		// Initializes the file
-		file = new File(fileName + ".dat");
+		file = new File(fileName);
 		if (file.exists()) {
 			// Deletes it if it exists so it starts over.
 			file.delete();
@@ -186,6 +189,7 @@ public class Copy extends RollbackOperation {
 		try {
 			file.createNewFile();
 		} catch (IOException e) {
+			System.out.print("Path: " + file.getAbsolutePath());
 			e.printStackTrace();
 			end(EndStatus.FAIL_IO_ERROR);
 			return false;

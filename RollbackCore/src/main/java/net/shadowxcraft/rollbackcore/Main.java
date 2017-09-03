@@ -20,6 +20,9 @@
 package net.shadowxcraft.rollbackcore;
 
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 import org.bukkit.ChatColor;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -42,6 +45,8 @@ public class Main extends JavaPlugin {
 		Config.loadConfigs(plugin);
 
 		try {
+			Path path = Paths.get(getDataFolder().getAbsolutePath(), "/saves");
+			Files.createDirectories(path);
 			Metrics metrics = new Metrics(this);
 			metrics.start();
 		} catch (IOException e) {

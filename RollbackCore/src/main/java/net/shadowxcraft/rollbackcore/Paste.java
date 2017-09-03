@@ -107,7 +107,7 @@ public class Paste extends RollbackOperation {
 	 * @param world
 	 *            What world the paste will be pasted in.
 	 * @param fileName
-	 *            The directory of the files.
+	 *            The path of the file
 	 * @param sender
 	 *            The person who will get status messages. Use null for no messages, and
 	 *            consoleSender for console.
@@ -123,6 +123,9 @@ public class Paste extends RollbackOperation {
 		this.min = min;
 		this.originalWorldSaveSetting = min.getWorld().isAutoSave();
 		min.getWorld().setAutoSave(false);
+		if (!fileName.endsWith(".dat")) {
+			fileName = Main.plugin.getDataFolder().getAbsolutePath() + "/saves/" + fileName + ".dat";
+		}
 		this.fileName = fileName;
 		this.sender = sender;
 		this.prefix = prefix;
@@ -186,11 +189,11 @@ public class Paste extends RollbackOperation {
 	}
 
 	private final boolean initializeFile() {
-		// Initializes the file. The .dat is added because it is a data file.
-		file = new File(fileName + ".dat");
+		// Initializes the file.
+		file = new File(fileName);
 
 		if (!file.exists()) {
-			end(EndStatus.FILE_NO_SUCH_FILE);
+			end(EndStatus.FAIL_NO_SUCH_FILE);
 			return false;
 		}
 

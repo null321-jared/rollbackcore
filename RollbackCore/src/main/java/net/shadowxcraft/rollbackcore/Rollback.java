@@ -292,7 +292,12 @@ public class Rollback {
 			Vector min = sel.getNativeMinimumPoint();
 
 			// Pastes it at those coordinates.
-			prePaste(min.getBlockX(), min.getBlockY(), min.getBlockZ(), player.getWorld(), name, player);
+			// Shows on console for debug and notification purposes.
+
+			Paste paste = new Paste(min.getBlockX(), min.getBlockY(), min.getBlockZ(), player.getWorld(), name, null,
+					player);
+			Bukkit.getScheduler().runTaskLater(Main.plugin, paste, 1);
+
 		} else {
 			// Lets the player know there's no selection.
 			player.sendMessage(Main.prefix + ChatColor.DARK_RED + "Invalid Selection!");
