@@ -30,8 +30,10 @@ import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -68,7 +70,7 @@ public class WatchDogRegion {
 	private Location min, max;						// The min and max of the region.
 	private int rollbackTask = -1;					// The task ID of the running operation.
 	// Where it stores the blocks' data for later repair.
-	private List<BlockState> originalStates = new ArrayList<BlockState>();
+	private Map<Location, BlockState> originalStates = new HashMap<Location, BlockState>();
 	private final boolean originalWorldSaveSetting; // The original world save setting of the world.
 	private final String prefix; 					// Used as the prefix in messages.
 
@@ -116,7 +118,7 @@ public class WatchDogRegion {
 	public final static void logBlock(BlockState state) {
 		for (WatchDogRegion watchDog : watchDogs) {
 			if (watchDog.isInRegion(state.getLocation())) {
-				watchDog.addState(state);
+				watchDog.addState(state, state.getLocation());
 			}
 		}
 	}
@@ -139,22 +141,10 @@ public class WatchDogRegion {
 	 * @param state
 	 *            The blockState that should be saved.
 	 */
-	protected final void addState(BlockState state) {
-		int index = 0;				// The index of the position in originalStates.
-		boolean originalLoc = true; // Keeps track of if the block's location is already saved.
-		// Loops through all of the existing states to make sure it isn't already there.
-		while (index < originalStates.size() && originalLoc) {
-			Location loc1 = state.getLocation();
-			Location loc2 = originalStates.get(index).getLocation();
-			if (loc1.getBlockX() == loc2.getBlockX() && loc1.getBlockY() == loc2.getBlockY()
-					&& loc1.getBlockZ() == loc2.getBlockZ() && loc1.getWorld().equals(loc2.getWorld())) {
-				originalLoc = false;
-			}
-			index++;
+	protected final void addState(BlockState state, Location location) {
+		if (!originalStates.containsKey(location)) {
+			originalStates.put(location, state);
 		}
-		// Adds it if it is original/unique.
-		if (originalLoc)
-			originalStates.add(state);
 	}
 
 	/**
@@ -246,7 +236,7 @@ public class WatchDogRegion {
 		WatchDogRegion createdWatchdog = null;
 		worldEditPlugin = (WorldEditPlugin) Bukkit.getServer().getPluginManager().getPlugin("WorldEdit");
 		if (worldEditPlugin == null) {
-			player.sendMessage(Main.prefix + "Error with region command! Error: WorldEdit is null.");
+			player.sendMessage(Main.prefix + "Error with region command: WorldEdit is null.");
 			return null;
 		}
 
@@ -293,6 +283,9 @@ public class WatchDogRegion {
 	public final void rollBack(final CommandSender sender, final boolean clearEntities,
 			final boolean quickClearEntities) {
 		final int size = originalStates.size();
+		final List<BlockState> originalStates = new ArrayList<BlockState>(this.originalStates.values());
+		this.originalStates.clear();
+
 		final long beginTime = System.nanoTime();
 		final WatchDogRegion wd = this;
 		final ClearEntities clearing;
@@ -344,7 +337,6 @@ public class WatchDogRegion {
 							if (index >= size) {
 								Bukkit.getScheduler().cancelTask(rollbackTask);
 								rollbackTask = -1;
-								originalStates.clear();
 								min.getWorld().setAutoSave(originalWorldSaveSetting);
 								if (sender != null) {
 									sender.sendMessage(prefix + "Done with rollback!");
@@ -385,7 +377,7 @@ public class WatchDogRegion {
 		FileUtilities.writeInt(out, max.getBlockZ());
 
 		// Writes every single block that needs reverting.
-		for (BlockState state : originalStates) {
+		for (BlockState state : originalStates.values()) {
 			FileUtilities.writeShort(out, state.getX() - min.getBlockX());
 			FileUtilities.writeShort(out, state.getY() - min.getBlockY());
 			FileUtilities.writeShort(out, state.getZ() - min.getBlockZ());
@@ -481,6 +473,10 @@ public class WatchDogRegion {
 		originalStates.clear();
 	}
 
+	public static boolean hasActiveRegion() {
+		return !watchDogs.isEmpty();
+	}
+
 	/**
 	 * Call this method when you no longer want to use it. It clears it and removes it from the list
 	 * that it keeps up to date.
@@ -543,7 +539,7 @@ class importOperation extends BukkitRunnable {
 				state.setTypeId(tempDataID >> 4);
 				state.setRawData((byte) ((tempDataID) & 15));
 				// Adds it to the watchdog region.
-				exportedTo.addState(state);
+				exportedTo.addState(state, blockLocation);
 				blocksImported++;
 			}
 			if (in.available() < 8) {

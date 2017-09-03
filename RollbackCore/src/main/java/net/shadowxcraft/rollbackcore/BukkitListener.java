@@ -108,21 +108,34 @@ public class BukkitListener implements Listener {
 
 	@EventHandler(priority = EventPriority.MONITOR)
 	public void onBlockPistonExtendEvent(BlockPistonExtendEvent event) {
-		if (!event.isCancelled()) {
+		if (!event.isCancelled() && WatchDogRegion.hasActiveRegion()) {
+			WatchDogRegion.logBlock(event.getBlock());
+
 			for (Block block : event.getBlocks()) {
 				WatchDogRegion.logBlock(block);
+				WatchDogRegion.logBlock(block.getRelative(event.getDirection()));
 			}
 		}
 	}
 
 	@EventHandler(priority = EventPriority.MONITOR)
 	public void onBlockPistonRetractEvent(BlockPistonRetractEvent event) {
-		if (!event.isCancelled()) {
-			for (Block block : event.getBlocks()) {
+		WatchDogRegion.logBlock(event.getBlock());
+		if (!event.isCancelled() && WatchDogRegion.hasActiveRegion()) {
+			try {
+				for (Block block : event.getBlocks()) {
+					WatchDogRegion.logBlock(block);
+					WatchDogRegion.logBlock(block.getRelative(event.getDirection()));
+				}
+			} catch (NoSuchMethodError error) {
+				Block block = event.getBlock().getRelative(event.getDirection());
+				WatchDogRegion.logBlock(block);
+				block = block.getRelative(event.getDirection());
 				WatchDogRegion.logBlock(block);
 			}
 		}
 	}
+
 
 	@EventHandler(priority = EventPriority.MONITOR)
 	public void onBlockSpreadEvent(BlockSpreadEvent event) {
