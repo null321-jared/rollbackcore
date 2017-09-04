@@ -19,6 +19,7 @@
 
 package net.shadowxcraft.rollbackcore;
 
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
 
@@ -59,15 +60,16 @@ public class Commands implements CommandExecutor {
 
 					if (args[0].equalsIgnoreCase("reload")) {
 						reloadCommand(sender);
-					} else if (args[0].equalsIgnoreCase("addarena")) {
-						addArenaCommand(sender);
+					} else if (args[0].equalsIgnoreCase("addarena") || args[0].equalsIgnoreCase("addregion")) {
+						addArenaCommand(sender, args);
 					} else if (args[0].equalsIgnoreCase("watchdog")) {
 						watchDogCommand(sender, args);
 					} else if (args[0].equalsIgnoreCase("copy")) {
 						copyCommand(sender, args);
 					} else if (args[0].equalsIgnoreCase("paste")) {
 						pasteCommand(sender, args);
-					} else if (args[0].equalsIgnoreCase("arena")) {
+					} else if (args[0].equalsIgnoreCase("arena") || args[0].equalsIgnoreCase("rollbackregion")
+							|| args[0].equalsIgnoreCase("region")) {
 						worldArenaRollackCommand(sender, args);
 					} else if (args[0].equalsIgnoreCase("help")) {
 						helpCommand(sender);
@@ -92,12 +94,16 @@ public class Commands implements CommandExecutor {
 		sender.sendMessage(prefix + "Reloaded!");
 	}
 
-	private final void addArenaCommand(CommandSender sender) {
+	private final void addArenaCommand(CommandSender sender, String[] args) {
 		// addarena command.
 		if (!(sender instanceof ConsoleCommandSender)) {
-			Rollback.copy((Player) sender, null, true);
+			if (args.length == 2 && args[1].matches("^[a-zA-Z0-9]+$")) {
+				Rollback.copy((Player) sender, args[1], true);
+			} else {
+				sender.sendMessage(prefix + "Usage: /rollback addarena <name>");
+			}
 		} else {
-			sender.sendMessage("Only players can issue this command!");
+			sender.sendMessage(prefix + "Only players can issue this command!");
 		}
 	}
 
@@ -168,11 +174,16 @@ public class Commands implements CommandExecutor {
 	@SuppressWarnings("deprecation")
 	private final void worldArenaRollackCommand(CommandSender sender, String args[]) {
 		if (args.length == 2) {
-			int[] temp = Config.getArenaXYZ(args[1]);
-			Rollback.prePaste(temp[0], temp[1], temp[2], plugin.getServer().getWorld(args[1]), "arenas/" + args[1] + ".dat",
-					sender);
+			Location temp = Config.getArenaLocation(args[1]);
+			if (temp.getWorld() != null) {
+				Rollback.prePaste(temp.getBlockX(), temp.getBlockY(), temp.getBlockZ(), temp.getWorld(),
+						Paths.get(Main.regionsPath.toString(), args[1]).toString(), sender);
+			} else {
+				sender.sendMessage(prefix
+						+ "Could not find world! Please re-create the arena save or edit the config to contain a valid world.");
+			}
 		} else {
-			sender.sendMessage(prefix + "Usage: /rollback arena <world>");
+			sender.sendMessage(prefix + "Usage: /rollback arena <arenaname>");
 		}
 	}
 
@@ -183,7 +194,8 @@ public class Commands implements CommandExecutor {
 		sender.sendMessage(ChatColor.GRAY + "/rollback copy | The copy commands.");
 		sender.sendMessage(ChatColor.GRAY + "/rollback paste | The paste commands.");
 		sender.sendMessage(ChatColor.GRAY + "/rollback watchdog <create|rollback> | The watchdog region commands.");
-		sender.sendMessage(ChatColor.GRAY + "/rollback <arena|addarena> | Used for integration with SurvivalGames.");
+		sender.sendMessage(ChatColor.GRAY
+				+ "/rollback <rollbackregion|addregion> <name> | Used for integration with minigame plugins.");
 		sender.sendMessage(ChatColor.GRAY + "----------------------------------------------------");
 	}
 

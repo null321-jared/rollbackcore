@@ -24,7 +24,14 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 
+import org.bukkit.Bukkit;
+import org.bukkit.Location;
+import org.bukkit.World;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -97,6 +104,21 @@ public class Config {
 		if (!yaml.contains("configversion")) {
 			yaml.set("configversion", 1.0);
 		}
+
+		boolean moved = yaml.getBoolean("movedfiles", false);
+		if (!moved) {
+			Path oldArenasFolder = Paths.get("arenas");
+			Main.plugin.getLogger().info("Moving the arena saves");
+			try {
+				Files.move(oldArenasFolder, Main.regionsPath, StandardCopyOption.REPLACE_EXISTING);
+				yaml.set("movedfiles", true);
+			} catch (IOException e) {
+				Main.plugin.getLogger().warning("Failed moving the arena saves");
+				e.printStackTrace();
+				yaml.set("movedfiles", false);
+			}
+		}
+
 		try {
 			yaml.save(file);
 		} catch (IOException e) {
@@ -127,28 +149,28 @@ public class Config {
 	}
 
 	// WARNING: Case sensitive!
-	public static final int[] getArenaXYZ(String arena) {
+	public static final Location getArenaLocation(String arena) {
 		// For debug reasons.
 		if (plugin == null) {
 			System.out.println("Plugin is null!");
 		}
-
-		// Stores it an array so that they can all be returned at the same time.
-		int[] xyz = { 0, 0, 0 };
 
 		// Loads the config.yml
 		File file = new File(plugin.getDataFolder() + "/config.yml");
 		YamlConfiguration yaml = YamlConfiguration.loadConfiguration(file);
 
 		// Gets the values.
-		xyz[0] = yaml.getInt("Config.arenas." + arena + ".x");
-		xyz[1] = yaml.getInt("Config.arenas." + arena + ".y");
-		xyz[2] = yaml.getInt("Config.arenas." + arena + ".z");
-		return xyz;
+		double x = yaml.getInt("Config.arenas." + arena + ".x");
+		double y = yaml.getInt("Config.arenas." + arena + ".y");
+		double z = yaml.getInt("Config.arenas." + arena + ".z");
+		String worldName = yaml.getString("Config.arenas." + arena + ".world", arena);
+		World world = Bukkit.getWorld(worldName);
+
+		return new Location(world, x, y, z);
 	}
 
 	// Returns false if it fails.
-	public static final boolean setArenaXYZ(String arena, int x, int y, int z) {
+	public static final boolean setArenaLocation(String arena, int x, int y, int z, World world) {
 		// For debug reasons.
 		if (plugin == null) {
 			System.out.println("Plugin is null!");
@@ -162,6 +184,7 @@ public class Config {
 		yaml.set("Config.arenas." + arena + ".x", x);
 		yaml.set("Config.arenas." + arena + ".y", y);
 		yaml.set("Config.arenas." + arena + ".z", z);
+		yaml.set("Config.arenas." + arena + ".world", world.getName());
 
 		// Tries to save the file.
 		try {

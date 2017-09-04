@@ -100,8 +100,11 @@ public class Copy extends RollbackOperation {
 	public Copy(Location min, Location max, String fileName, CommandSender sender, String prefix) {
 		this.min = min;
 		this.max = max;
-		if (!fileName.endsWith(".dat")) {
-			fileName = Main.plugin.getDataFolder().getAbsolutePath() + "/saves/" + fileName + ".dat";
+		if (!fileName.contains(".")) {
+			fileName += ".dat";
+			if (!fileName.contains("/") || !fileName.contains("\\")) {
+				fileName = Main.plugin.getDataFolder().getAbsolutePath() + "/saves/" + fileName;
+			}
 		}
 		this.fileName = fileName;
 		this.sender = sender;

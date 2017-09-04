@@ -25,6 +25,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 
 import org.bukkit.Bukkit;
@@ -83,15 +84,14 @@ public class Rollback {
 
 			// Used to add an arena to the config for integration with SG.
 			if (addToConf) {
-				new File("arenas").mkdir();
-				name = "arenas/" + player.getWorld().getName();
-				if (!Config.setArenaXYZ(player.getWorld().getName(), min.getBlockX(), min.getBlockY(),
-						min.getBlockZ())) {
+				if (!Config.setArenaLocation(name, min.getBlockX(), min.getBlockY(), min.getBlockZ(),
+						player.getWorld())) {
 					// If this code gets executed, it was unable to save the
 					// YAML.
 					player.sendMessage(Main.prefix + ChatColor.DARK_RED + "Unable to add arena to config! Aborting.");
 					return;
 				}
+				name = Paths.get(Main.regionsPath.toString(), name + ".dat").toString();
 			}
 
 			// Copies the arena (distributed).
@@ -336,7 +336,7 @@ public class Rollback {
 		// Checks if it is a single file, if not, it uses the distributed
 		// system.
 		if (dat.exists()) {
-			Paste paste = new Paste(x, y, z, world, name, null, sender);
+			Paste paste = new Paste(x, y, z, world, name + ".dat", null, sender);
 			Bukkit.getScheduler().runTaskLater(Main.plugin, paste, 1);
 		} else if (dir.isDirectory()) {
 			pasteDistributed(x, y, z, world, name, sender);
@@ -383,7 +383,7 @@ public class Rollback {
 
 		// Opens the index file
 		try {
-			index = new File("./" + name + "/index.dat");
+			index = new File(name + "/index.dat");
 		} catch (Exception e) {
 			// if any error occurs
 			e.printStackTrace();
@@ -408,7 +408,7 @@ public class Rollback {
 
 				// Adds the paste to the ArrayList so it can be pasted later.
 				pastes.add(new Paste(x + (differenceX * SIZE), y + (differenceY * SIZE), z + (differenceZ * SIZE),
-						world, "./" + name + "/" + file, pastes, sender));
+						world, name + "/" + file + ".dat", pastes, sender));
 
 			}
 

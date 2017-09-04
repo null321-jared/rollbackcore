@@ -123,8 +123,11 @@ public class Paste extends RollbackOperation {
 		this.min = min;
 		this.originalWorldSaveSetting = min.getWorld().isAutoSave();
 		min.getWorld().setAutoSave(false);
-		if (!fileName.endsWith(".dat")) {
-			fileName = Main.plugin.getDataFolder().getAbsolutePath() + "/saves/" + fileName + ".dat";
+		if (!fileName.contains(".")) {
+			fileName += ".dat";
+			if (!fileName.contains("/") || !fileName.contains("\\")) {
+				fileName = Main.plugin.getDataFolder().getAbsolutePath() + "/saves/" + fileName;
+			}
 		}
 		this.fileName = fileName;
 		this.sender = sender;
@@ -194,6 +197,7 @@ public class Paste extends RollbackOperation {
 
 		if (!file.exists()) {
 			end(EndStatus.FAIL_NO_SUCH_FILE);
+			Main.plugin.getLogger().info("Could not find file " + file.getAbsolutePath());
 			return false;
 		}
 

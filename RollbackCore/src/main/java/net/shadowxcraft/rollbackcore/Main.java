@@ -32,6 +32,8 @@ import net.shadowxcraft.rollbackcore.metrics.Metrics;
 public class Main extends JavaPlugin {
 
 	public static JavaPlugin plugin;
+	public static Path savesPath;
+	public static Path regionsPath;
 
 	// Fired when plugin is first enabled
 	@Override
@@ -42,16 +44,19 @@ public class Main extends JavaPlugin {
 		getServer().getPluginManager().registerEvents(new BukkitListener(), plugin);
 		getServer().getPluginManager().registerEvents(new NewListeners(), plugin);
 
-		Config.loadConfigs(plugin);
-
 		try {
-			Path path = Paths.get(getDataFolder().getAbsolutePath(), "/saves");
-			Files.createDirectories(path);
+			savesPath = Paths.get(getDataFolder().getAbsolutePath(), "/saves");
+			Files.createDirectories(savesPath);
+
+			regionsPath = Paths.get(savesPath.toString(), "/regions");
+			Files.createDirectories(regionsPath);
+
 			Metrics metrics = new Metrics(this);
 			metrics.start();
 		} catch (IOException e) {
 			// Failed to submit the stats :-(
 		}
+		Config.loadConfigs(plugin);
 	}
 
 	// The plugin's prefix, used for messages.
