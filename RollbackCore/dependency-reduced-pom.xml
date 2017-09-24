@@ -4,7 +4,7 @@
   <groupId>net.shadowxcraft</groupId>
   <artifactId>RollbackCore</artifactId>
   <name>RollbackCore</name>
-  <version>2.3</version>
+  <version>2.3.2</version>
   <description>Rollbacks arenas.</description>
   <build>
     <plugins>
@@ -77,5 +77,9 @@
       <scope>compile</scope>
     </dependency>
   </dependencies>
+  <properties>
+    <maven.compiler.source>1.7</maven.compiler.source>
+    <maven.compiler.target>1.7</maven.compiler.target>
+  </properties>
 </project>
 

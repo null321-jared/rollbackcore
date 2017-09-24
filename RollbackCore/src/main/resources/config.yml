@@ -10,5 +10,6 @@ Config:
       x: 1
       y: 1
       z: 1
+      world: "world"
 # Don't change this, it may cause issues in the future if the config changes!
 configversion: 1.0

@@ -306,46 +306,6 @@ public class Rollback {
 	}
 
 	/**
-	 * Use if you want to maintain compatibility with distributed pastes. It checks if you are
-	 * trying to paste a simple file, or a distributed paste, and uses the appropriate methods.
-	 * 
-	 * @param x
-	 *            Where the min-x of the paste will be pasted.
-	 * @param y
-	 *            Where the min-y of the paste will be pasted.
-	 * @param z
-	 *            Where the min-z of the paste will be pasted.
-	 * @param world
-	 *            What world the paste will be pasted in.
-	 * @param name
-	 *            The directory of the files.
-	 * @param sender
-	 *            The person who will get status messages. Use null for no messsages, and
-	 *            consoleSender for console.
-	 * @deprecated Ever since version 2.0, due to the performance improvements this method is no
-	 *             longer needed. Only use it for backwards compatibility if your plugin used
-	 *             distributed pastes.
-	 */
-	public static final void prePaste(int x, int y, int z, World world, String name, CommandSender sender) {
-		// Shows on console for debug and notification purposes.
-		System.out.println("New paste at " + x + " " + y + " " + z + " " + world + " " + name);
-
-		File dat = new File(name + ".dat");
-		File dir = new File(name);
-
-		// Checks if it is a single file, if not, it uses the distributed
-		// system.
-		if (dat.exists()) {
-			Paste paste = new Paste(x, y, z, world, name + ".dat", null, sender);
-			Bukkit.getScheduler().runTaskLater(Main.plugin, paste, 1);
-		} else if (dir.isDirectory()) {
-			pasteDistributed(x, y, z, world, name, sender);
-		} else if (sender != null) {
-			sender.sendMessage(Main.prefix + "Not a file!");
-		}
-	}
-
-	/**
 	 * A non-recommended way to paste. It checks if you are trying to paste a simple file, or a
 	 * distributed paste, and uses the appropriate methods.
 	 * 

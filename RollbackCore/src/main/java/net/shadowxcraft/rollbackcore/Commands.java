@@ -19,10 +19,12 @@
 
 package net.shadowxcraft.rollbackcore;
 
+import java.io.File;
 import java.nio.file.Paths;
-import java.util.Arrays;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 
+import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.World;
@@ -70,7 +72,7 @@ public class Commands implements CommandExecutor {
 						pasteCommand(sender, args);
 					} else if (args[0].equalsIgnoreCase("arena") || args[0].equalsIgnoreCase("rollbackregion")
 							|| args[0].equalsIgnoreCase("region")) {
-						worldArenaRollackCommand(sender, args);
+						arenaRollackCommand(sender, args);
 					} else if (args[0].equalsIgnoreCase("help")) {
 						helpCommand(sender);
 					} else if (args[0].equalsIgnoreCase("cancel") || args[0].equalsIgnoreCase("cancelall")) {
@@ -134,9 +136,11 @@ public class Commands implements CommandExecutor {
 			// "/rollback paste <x> <y> <z> <world> <file> -clearEntites -ignoreAir"
 			// Requires no worldedit.
 			Location min;
-			List<String> argsList = Arrays.asList(args);
-			for (int i = 0; i < argsList.size(); i++)
-				argsList.set(i, argsList.get(i).toLowerCase());
+			Set<String> otherArgs = new HashSet<String>();
+			for (int i = 2; i < args.length; i++) {
+				otherArgs.add(args[i].toLowerCase());
+			}
+
 			try {
 				World world = plugin.getServer().getWorld(args[4]);
 				if (world == null) {
@@ -144,8 +148,11 @@ public class Commands implements CommandExecutor {
 				} else {
 					min = new Location(world, Integer.parseInt(args[1]), Integer.parseInt(args[2]),
 							Integer.parseInt(args[3]));
-					new Paste(min, args[5], sender, argsList.contains("-clearentities"),
-							argsList.contains("-ignoreair"), prefix).run();
+					new Paste(min, args[5], sender, otherArgs.remove("-clearentities"), otherArgs.remove("-ignoreair"),
+							prefix).run();
+					if (otherArgs.size() > 0)
+						sender.sendMessage(
+								Main.prefix + "Unknown args " + otherArgs.toString() + ". Continuing with operation.");
 				}
 			} catch (NumberFormatException e) {
 				sender.sendMessage(prefix + ChatColor.RED + " You must specify an integer for the time!");
@@ -172,18 +179,47 @@ public class Commands implements CommandExecutor {
 	}
 
 	@SuppressWarnings("deprecation")
-	private final void worldArenaRollackCommand(CommandSender sender, String args[]) {
-		if (args.length == 2) {
+	private final void arenaRollackCommand(CommandSender sender, String[] args) {
+		if (args.length >= 2) {
+
 			Location temp = Config.getArenaLocation(args[1]);
 			if (temp.getWorld() != null) {
-				Rollback.prePaste(temp.getBlockX(), temp.getBlockY(), temp.getBlockZ(), temp.getWorld(),
-						Paths.get(Main.regionsPath.toString(), args[1]).toString(), sender);
+				String name = Paths.get(Main.regionsPath.toString(), args[1]).toString();
+
+				Set<String> otherArgs = new HashSet<String>();
+				for (int i = 2; i < args.length; i++) {
+					otherArgs.add(args[i].toLowerCase());
+				}
+
+				File dat = new File(name + ".dat");
+				File dir = new File(name);
+
+				// Checks if it is a single file, if not, it uses the distributed
+				// system.
+				if (dat.exists()) {
+					Paste paste = new Paste(temp, name + ".dat", sender, otherArgs.remove("-clearentities"),
+							otherArgs.remove("-ignoreair"), Main.prefix);
+					Bukkit.getScheduler().runTaskLater(Main.plugin, paste, 1);
+					if (otherArgs.size() > 0)
+						sender.sendMessage(
+								Main.prefix + "Unknown args " + otherArgs.toString() + ". Continuing with operation.");
+				} else if (dir.isDirectory()) {
+					if (otherArgs.size() > 0) {
+						sender.sendMessage(Main.prefix
+								+ "Args will be ignored due to old save format. Re-save the region to use them.");
+					}
+					Rollback.pasteDistributed(temp.getBlockX(), temp.getBlockY(), temp.getBlockZ(), temp.getWorld(),
+							name, sender);
+				} else if (sender != null) {
+					sender.sendMessage(Main.prefix + "Not a file!");
+				}
+
 			} else {
 				sender.sendMessage(prefix
 						+ "Could not find world! Please re-create the arena save or edit the config to contain a valid world.");
 			}
 		} else {
-			sender.sendMessage(prefix + "Usage: /rollback arena <arenaname>");
+			sender.sendMessage(prefix + "Usage: /rollback rollbackregion <arenaname> [-clearEntities -ignoreAir]");
 		}
 	}
 

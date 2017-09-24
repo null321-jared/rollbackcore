@@ -108,9 +108,11 @@ public class Config {
 		boolean moved = yaml.getBoolean("movedfiles", false);
 		if (!moved) {
 			Path oldArenasFolder = Paths.get("arenas");
-			Main.plugin.getLogger().info("Moving the arena saves");
 			try {
-				Files.move(oldArenasFolder, Main.regionsPath, StandardCopyOption.REPLACE_EXISTING);
+				if (Files.exists(oldArenasFolder)) {
+					Files.move(oldArenasFolder, Main.regionsPath, StandardCopyOption.REPLACE_EXISTING);
+					Main.plugin.getLogger().info("Moving the arena saves");
+				}
 				yaml.set("movedfiles", true);
 			} catch (IOException e) {
 				Main.plugin.getLogger().warning("Failed moving the arena saves");
