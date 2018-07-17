@@ -23,9 +23,12 @@ import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.zip.Deflater;
+import java.util.zip.DeflaterOutputStream;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -46,8 +49,8 @@ import net.shadowxcraft.rollbackcore.events.EndStatus;
 public class Copy extends RollbackOperation {
 
 	private CopyTask copyTask;				// The copy task that this object is using.
-	private BufferedOutputStream out;
-	private File file;
+	private OutputStream out, outFull, outDeflated;
+	private File file, fileDeflated, fileFull;
 	private Long startTime = -1l;
 	private static final List<Copy> runningCopies = new ArrayList<Copy>();
 
@@ -170,7 +173,7 @@ public class Copy extends RollbackOperation {
 		if (!startFile())
 			return false;
 
-		CopyTask task = new CopyTask(min, max, out, this, sender, prefix);
+		CopyTask task = new CopyTask(min, max, out, outFull, outDeflated, this, sender, prefix);
 
 		this.copyTask = task;
 		runningCopies.add(this);
@@ -183,6 +186,8 @@ public class Copy extends RollbackOperation {
 	private final boolean initializeStream() {
 		// Initializes the file
 		file = new File(fileName);
+		fileFull = new File(fileName + "_full");
+		fileDeflated = new File(fileName + "_deflated");
 		if (file.exists()) {
 			// Deletes it if it exists so it starts over.
 			file.delete();
@@ -191,6 +196,8 @@ public class Copy extends RollbackOperation {
 		// Creates the file.
 		try {
 			file.createNewFile();
+			fileFull.createNewFile();
+			fileDeflated.createNewFile();
 		} catch (IOException e) {
 			System.out.print("Path: " + file.getAbsolutePath());
 			e.printStackTrace();
@@ -201,6 +208,8 @@ public class Copy extends RollbackOperation {
 		// Initializes the FileOutputStream.
 		try {
 			out = new BufferedOutputStream(new FileOutputStream(file));
+			outFull = new BufferedOutputStream(new FileOutputStream(fileFull));
+			outDeflated = new DeflaterOutputStream(new BufferedOutputStream(new FileOutputStream(fileDeflated)), new Deflater(9));
 		} catch (IOException e) {
 			e.printStackTrace();
 			end(EndStatus.FAIL_IO_ERROR);
@@ -215,10 +224,14 @@ public class Copy extends RollbackOperation {
 		// versions.
 		try {
 			out.write(VERSION);
+			outFull.write(VERSION);
+			outDeflated.write(VERSION);
 			// VERSION 1 SPECIFIC
 			out.write(simpleBlocks.length);
 			for (int id : simpleBlocks) {
 				out.write(id);
+				outFull.write(id);
+				outDeflated.write(id);
 			}
 			// END VERSION 1 SPECIFIC
 
@@ -227,6 +240,12 @@ public class Copy extends RollbackOperation {
 			FileUtilities.writeShort(out, max.getBlockX() - min.getBlockX());
 			FileUtilities.writeShort(out, max.getBlockY() - min.getBlockY());
 			FileUtilities.writeShort(out, max.getBlockZ() - min.getBlockZ());
+			FileUtilities.writeShort(outFull, max.getBlockX() - min.getBlockX());
+			FileUtilities.writeShort(outFull, max.getBlockY() - min.getBlockY());
+			FileUtilities.writeShort(outFull, max.getBlockZ() - min.getBlockZ());
+			FileUtilities.writeShort(outDeflated, max.getBlockX() - min.getBlockX());
+			FileUtilities.writeShort(outDeflated, max.getBlockY() - min.getBlockY());
+			FileUtilities.writeShort(outDeflated, max.getBlockZ() - min.getBlockZ());
 		} catch (IOException e1) {
 			e1.printStackTrace();
 			end(EndStatus.FAIL_IO_ERROR);
@@ -252,6 +271,8 @@ public class Copy extends RollbackOperation {
 		if (out != null)
 			try {
 				copyTask.out.close();
+				copyTask.outFull.close();
+				copyTask.outDeflated.close();
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
@@ -273,19 +294,23 @@ public class Copy extends RollbackOperation {
 class CopyTask extends RollbackOperation {
 	final private Location tempLoc;		// Stores the location that is currently being worked on.
 	private final Copy copy;					// Stores the copy object this works with.
-	final BufferedOutputStream out;		// Used to read from the file.
+	final OutputStream out;		// Used to read from the file.
+	final OutputStream outFull;		// Used to read from the file.
+	final OutputStream outDeflated;		// Used to read from the file.
 	int lastId = -1;	// Used to keep track of which ID was the previous for the count.
 	int lastData = -1;	// Used to keep track of which Data was the previous for the count.
 	int count = 0;		// Used for compression to keep track of how many times the block repeats.
 	long tick = 0;		// Used to keep track of how many ticks the copy operation has run.
 	long blockIndex = 0;// Used to store the index of the block, for statistical reasons.
 
-	public CopyTask(Location min, Location max, BufferedOutputStream out, Copy copy, CommandSender sender,
-			String prefix) {
+	public CopyTask(Location min, Location max, OutputStream out2, OutputStream outFull2, OutputStream outDeflated2,
+			Copy copy, CommandSender sender, String prefix) {
 		this.min = min;
 		this.tempLoc = min.clone();
 		this.max = max;
-		this.out = out;
+		this.out = out2;
+		this.outFull = outFull2;
+		this.outDeflated = outDeflated2;
 		this.copy = copy;
 		this.sender = sender;
 		this.prefix = prefix;
@@ -325,6 +350,15 @@ class CopyTask extends RollbackOperation {
 		// Gets the value and ID of the block at the location.
 		int id = block.getTypeId();
 		byte data = block.getData();
+		try {
+			outFull.write(id);
+			outFull.write(data);
+			outDeflated.write(id);
+			outDeflated.write(data);
+		} catch (IOException e) {
+
+		}
+
 		// Material type = block.getType();
 
 		// If they are the same, skip writing. If it's -1 it means it is the first block so it
