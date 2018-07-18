@@ -24,9 +24,14 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.zip.Deflater;
 import java.util.zip.DeflaterOutputStream;
 
@@ -36,6 +41,8 @@ import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.Sign;
 import org.bukkit.command.CommandSender;
+
+import com.google.common.base.Charsets;
 
 import net.shadowxcraft.rollbackcore.events.CopyEndEvent;
 import net.shadowxcraft.rollbackcore.events.EndStatus;
@@ -48,9 +55,9 @@ import net.shadowxcraft.rollbackcore.events.EndStatus;
  */
 public class Copy extends RollbackOperation {
 
-	private CopyTask copyTask;				// The copy task that this object is using.
-	private OutputStream out, outFull, outDeflated;
-	private File file, fileDeflated, fileFull;
+	protected Map<String, Integer> idMapping = new HashMap<String, Integer>();
+	private OutputStream out, rawOut;
+	private File tempFile;
 	private Long startTime = -1l;
 	private static final List<Copy> runningCopies = new ArrayList<Copy>();
 
@@ -170,12 +177,11 @@ public class Copy extends RollbackOperation {
 		if (!initializeStream())
 			return false;
 
-		if (!startFile())
+		if (!startFile(out))
 			return false;
 
-		CopyTask task = new CopyTask(min, max, out, outFull, outDeflated, this, sender, prefix);
+		CopyTask task = new CopyTask(min, max, out, this, sender, prefix);
 
-		this.copyTask = task;
 		runningCopies.add(this);
 		TaskManager.addTask();
 		taskID = Main.plugin.getServer().getScheduler().scheduleSyncRepeatingTask(Main.plugin, task, 1, 1);
@@ -185,21 +191,17 @@ public class Copy extends RollbackOperation {
 	// Prepares the file and stream.
 	private final boolean initializeStream() {
 		// Initializes the file
-		file = new File(fileName);
-		fileFull = new File(fileName + "_full");
-		fileDeflated = new File(fileName + "_deflated");
-		if (file.exists()) {
+		tempFile = new File(fileName);
+		if (tempFile.exists()) {
 			// Deletes it if it exists so it starts over.
-			file.delete();
+			tempFile.delete();
 		}
 
 		// Creates the file.
 		try {
-			file.createNewFile();
-			fileFull.createNewFile();
-			fileDeflated.createNewFile();
+			tempFile.createNewFile();
 		} catch (IOException e) {
-			System.out.print("Path: " + file.getAbsolutePath());
+			System.out.print("Path: " + tempFile.getAbsolutePath());
 			e.printStackTrace();
 			end(EndStatus.FAIL_IO_ERROR);
 			return false;
@@ -207,9 +209,8 @@ public class Copy extends RollbackOperation {
 
 		// Initializes the FileOutputStream.
 		try {
-			out = new BufferedOutputStream(new FileOutputStream(file));
-			outFull = new BufferedOutputStream(new FileOutputStream(fileFull));
-			outDeflated = new DeflaterOutputStream(new BufferedOutputStream(new FileOutputStream(fileDeflated)), new Deflater(9));
+			rawOut = new FileOutputStream(tempFile);
+			out = new BufferedOutputStream(rawOut);
 		} catch (IOException e) {
 			e.printStackTrace();
 			end(EndStatus.FAIL_IO_ERROR);
@@ -219,33 +220,17 @@ public class Copy extends RollbackOperation {
 	}
 
 	// Writes the initial data- Version, blocks, and size.
-	private final boolean startFile() {
+	private final boolean startFile(OutputStream out) {
 		// Writes the version so that the plugin can convert/reject incompatible
 		// versions.
 		try {
 			out.write(VERSION);
-			outFull.write(VERSION);
-			outDeflated.write(VERSION);
-			// VERSION 1 SPECIFIC
-			out.write(simpleBlocks.length);
-			for (int id : simpleBlocks) {
-				out.write(id);
-				outFull.write(id);
-				outDeflated.write(id);
-			}
-			// END VERSION 1 SPECIFIC
 
 			// Writes the sizes to the file using writeShort because it can be
 			// larger than 255.
 			FileUtilities.writeShort(out, max.getBlockX() - min.getBlockX());
 			FileUtilities.writeShort(out, max.getBlockY() - min.getBlockY());
 			FileUtilities.writeShort(out, max.getBlockZ() - min.getBlockZ());
-			FileUtilities.writeShort(outFull, max.getBlockX() - min.getBlockX());
-			FileUtilities.writeShort(outFull, max.getBlockY() - min.getBlockY());
-			FileUtilities.writeShort(outFull, max.getBlockZ() - min.getBlockZ());
-			FileUtilities.writeShort(outDeflated, max.getBlockX() - min.getBlockX());
-			FileUtilities.writeShort(outDeflated, max.getBlockY() - min.getBlockY());
-			FileUtilities.writeShort(outDeflated, max.getBlockZ() - min.getBlockZ());
 		} catch (IOException e1) {
 			e1.printStackTrace();
 			end(EndStatus.FAIL_IO_ERROR);
@@ -268,14 +253,13 @@ public class Copy extends RollbackOperation {
 
 		runningCopies.remove(this);
 		// Closes the resource to close resources.
-		if (out != null)
+		if (out != null) {
 			try {
-				copyTask.out.close();
-				copyTask.outFull.close();
-				copyTask.outDeflated.close();
+				out.close();
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
+		}
 		if (taskID >= 0) {
 			// Ends the repeating task.
 			Bukkit.getScheduler().cancelTask(taskID);
@@ -295,22 +279,17 @@ class CopyTask extends RollbackOperation {
 	final private Location tempLoc;		// Stores the location that is currently being worked on.
 	private final Copy copy;					// Stores the copy object this works with.
 	final OutputStream out;		// Used to read from the file.
-	final OutputStream outFull;		// Used to read from the file.
-	final OutputStream outDeflated;		// Used to read from the file.
-	int lastId = -1;	// Used to keep track of which ID was the previous for the count.
-	int lastData = -1;	// Used to keep track of which Data was the previous for the count.
-	int count = 0;		// Used for compression to keep track of how many times the block repeats.
 	long tick = 0;		// Used to keep track of how many ticks the copy operation has run.
 	long blockIndex = 0;// Used to store the index of the block, for statistical reasons.
+	protected int index = 1; // Stores the next index for the item IDs in the palate.
+	protected int count = 0; // Stores the number of blocks in a row
+	protected String lastString = null; // Stores the string representation of the previous block.
 
-	public CopyTask(Location min, Location max, OutputStream out2, OutputStream outFull2, OutputStream outDeflated2,
-			Copy copy, CommandSender sender, String prefix) {
+	public CopyTask(Location min, Location max, OutputStream out, Copy copy, CommandSender sender, String prefix) {
 		this.min = min;
 		this.tempLoc = min.clone();
 		this.max = max;
-		this.out = out2;
-		this.outFull = outFull2;
-		this.outDeflated = outDeflated2;
+		this.out = out;
 		this.copy = copy;
 		this.sender = sender;
 		this.prefix = prefix;
@@ -340,7 +319,6 @@ class CopyTask extends RollbackOperation {
 		}
 	}
 
-	@SuppressWarnings("deprecation")
 	private final void nextBlock() {
 		// Gets the location from the XYZ of the for loops.
 
@@ -348,85 +326,38 @@ class CopyTask extends RollbackOperation {
 		Block block = tempLoc.getBlock();
 
 		// Gets the value and ID of the block at the location.
-		int id = block.getTypeId();
-		byte data = block.getData();
-		try {
-			outFull.write(id);
-			outFull.write(data);
-			outDeflated.write(id);
-			outDeflated.write(data);
-		} catch (IOException e) {
-
-		}
-
-		// Material type = block.getType();
-
-		// If they are the same, skip writing. If it's -1 it means it is the first block so it
-		// should skip writing. If it's 255, write it because that's the max value the byte
-		// array can hold.
-		// !(type.equals(Material.SIGN_POST) || type.equals(Material.WALL_SIGN))
-		if (id == lastId && data == lastData && count != 255 && id != wallSignID && id != signPostID) {
-
-			// This means that the block repeated itself, so it keeps track of it, rather than
-			// writing it every time. This is to compress the output file.
-			count++;
-
+		String data = block.getBlockData().getAsString();
+		if (count < 255 && data.equals(lastString)) {
+			count++; // Increments the counter
 		} else {
+			// Searches for existing representation of block.
+			Integer id = copy.idMapping.putIfAbsent(data, index);
 			try {
-				writeIDsToFile(id, data, block);
+				if(count != 0)
+					out.write(count); // Writes the last one's count
+				count = 1;
+				if (id == null) {
+					// New block.
+					// TODO: Support more than 255 IDs.
+					// It was absent, so writes it to the file,
+					// then increments the index.
+					out.write(0); // Notes new data.
+					out.write(data.length()); // Length of the data.
+					out.write(data.getBytes(StandardCharsets.ISO_8859_1));
+
+					out.write(index); // Now writes the index.
+					index++; // Indexes it for the next one.
+				} else {
+					out.write(id.intValue()); // ID
+				}
 			} catch (IOException e) {
 				e.printStackTrace();
 				copy.end(EndStatus.FAIL_IO_ERROR);
-
 			}
+			lastString = data;
 		}
 
 		updateVariables();
-
-		// Sets the Last ints to last used ones so that it can check
-		// if the new block is the same as the last one.
-		lastId = id;
-		lastData = data;
-
-	}
-
-	private final void writeIDsToFile(int id, int data, Block block) throws IOException {
-		// Write the count of the previous block down.
-		if (count != 0) {
-			out.write(count);
-		}
-
-		// Write the ID of the new block.
-		out.write(id);
-
-		// Checks if it is a sign.
-		if (id == wallSignID || id == signPostID) {
-			// If it is a sign, write the data (Direction it is facing in a
-			// sign's case)
-			out.write(data);
-			// Write 0 to signify the start of a line
-			out.write(0);
-			for (int i = 0; i < 4; i++) {
-				// Write the line to the file.
-				String signText = ((Sign) block.getState()).getLine(i);
-				for (int indx = 0; indx < signText.length(); indx++) {
-					out.write(signText.charAt(indx));
-				}
-				// Write 0 to signify the end of the line and start of a new
-				// one.
-				out.write(0);
-			}
-			count = 0;
-		} else {
-			// Skip writing the ID if the block doesn't need the ID saved to
-			// save an average of about 15% of the data.
-			if (!isSimple(id, simpleBlocks)) {
-				out.write(data);
-			}
-			// Sets count = to one to signify it is the first block in a
-			// row.
-			count = 1;
-		}
 
 	}
 
@@ -448,18 +379,7 @@ class CopyTask extends RollbackOperation {
 	}
 
 	private final void finish() {
-		// Writes the count to finish the file.
-		// Skips signs because signs don't compress.
-		if (lastId != 63 && lastId != 68) {
-			try {
-				out.write(count);
-			} catch (IOException e) {
-				e.printStackTrace();
-				copy.end(EndStatus.FAIL_IO_ERROR);
-				return;
-			}
-		}
-
+		System.out.println("Number of unique blocks: " + index);
 		copy.end(EndStatus.SUCCESS);
 	}
 

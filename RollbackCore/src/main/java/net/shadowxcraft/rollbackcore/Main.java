@@ -27,8 +27,6 @@ import java.nio.file.Paths;
 import org.bukkit.ChatColor;
 import org.bukkit.plugin.java.JavaPlugin;
 
-import net.shadowxcraft.rollbackcore.metrics.Metrics;
-
 public class Main extends JavaPlugin {
 
 	public static JavaPlugin plugin;
@@ -50,9 +48,6 @@ public class Main extends JavaPlugin {
 
 			regionsPath = Paths.get(savesPath.toString(), "/regions");
 			Files.createDirectories(regionsPath);
-
-			Metrics metrics = new Metrics(this);
-			metrics.start();
 		} catch (IOException e) {
 			// Failed to submit the stats :-(
 		}

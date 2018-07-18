@@ -44,7 +44,7 @@ abstract class RollbackOperation implements Runnable {
 	public String prefix;				// The prefixes used by messages if sender is not null
 	protected String fileName;			// The name and directory of the file.
 	protected int taskID = -1;			// The ID of the task running for the operation.
-	public static final int VERSION = 1;// The current version of the plugin stoage format.
+	public static final int VERSION = 2;// The current version of the plugin stoage format.
 	int lastChunkX;						// To keep track of when to unload the row of chunks.
 
 	// Storing the following IDs provides about a 15% increase in performance
@@ -52,7 +52,7 @@ abstract class RollbackOperation implements Runnable {
 	@SuppressWarnings("deprecation")
 	static final int wallSignID = Material.WALL_SIGN.getId();
 	@SuppressWarnings("deprecation")
-	static final int signPostID = Material.SIGN_POST.getId();
+	static final int signPostID = Material.SIGN.getId();
 
 	/**
 	 * The list of blocks that the plugin skipped saving the data for in file format 1 for backwards

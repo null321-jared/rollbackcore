@@ -30,6 +30,7 @@ import java.util.List;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.Sign;
@@ -429,10 +430,11 @@ class PasteTask extends RollbackOperation {
 
 		// Checks if the blocks are the same to save resources. It is much more efficient to only
 		// change blocks that are different.
-		if ((id != 0 || !ignoreAir) && (id != block.getTypeId() || data != block.getData())) {
+		if ((id != 0 || !ignoreAir) && (id != block.getType().getId() || data != block.getData())) {
 			// If they are, schedule a new
 			// BlockClass
-			block.setTypeIdAndData(id, (byte) data, false);
+			block.setType(Material.getMaterial(LegacyUpdater.legacyMaterialNames[id], true));
+			block.setData((byte) data);
 
 			paste.blocksChanged++;
 		}

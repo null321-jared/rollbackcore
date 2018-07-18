@@ -38,6 +38,7 @@ import java.util.Map;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockState;
@@ -381,7 +382,8 @@ public class WatchDogRegion {
 			FileUtilities.writeShort(out, state.getX() - min.getBlockX());
 			FileUtilities.writeShort(out, state.getY() - min.getBlockY());
 			FileUtilities.writeShort(out, state.getZ() - min.getBlockZ());
-			FileUtilities.writeIDAndData(out, state.getTypeId(), state.getRawData());
+			// TODO: I doubt this works.
+			FileUtilities.writeIDAndData(out, state.getType().getId(), state.getRawData());
 		}
 
 		out.close();
@@ -536,7 +538,7 @@ class importOperation extends BukkitRunnable {
 				state = blockLocation.getBlock().getState();
 				// Updates its type to what it is in the backup.
 				// The bitwise operators are used to properly read the compressed data.
-				state.setTypeId(tempDataID >> 4);
+				state.setType(Material.values()[tempDataID >> 4]);
 				state.setRawData((byte) ((tempDataID) & 15));
 				// Adds it to the watchdog region.
 				exportedTo.addState(state, blockLocation);

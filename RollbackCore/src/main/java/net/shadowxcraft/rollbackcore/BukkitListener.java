@@ -173,7 +173,7 @@ public class BukkitListener implements Listener {
 			Material mt = event.getMaterial();
 			if (event.getAction().equals(Action.RIGHT_CLICK_BLOCK)) {
 				if (mt.equals(Material.WATER_BUCKET) || mt.equals(Material.LAVA_BUCKET)
-						|| mt.equals(Material.FIREWORK_CHARGE) || mt.equals(Material.FLINT_AND_STEEL)) {
+						|| mt.equals(Material.FIREWORK_ROCKET) || mt.equals(Material.FLINT_AND_STEEL)) {
 					WatchDogRegion.logBlock(event.getClickedBlock().getRelative(event.getBlockFace()));
 				}
 				if (event.getClickedBlock().getType().equals(Material.TNT)) {
