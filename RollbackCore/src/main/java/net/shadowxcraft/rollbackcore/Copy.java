@@ -24,25 +24,18 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
-import java.util.zip.Deflater;
-import java.util.zip.DeflaterOutputStream;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.block.Block;
-import org.bukkit.block.Sign;
 import org.bukkit.command.CommandSender;
-
-import com.google.common.base.Charsets;
 
 import net.shadowxcraft.rollbackcore.events.CopyEndEvent;
 import net.shadowxcraft.rollbackcore.events.EndStatus;
@@ -55,7 +48,6 @@ import net.shadowxcraft.rollbackcore.events.EndStatus;
  */
 public class Copy extends RollbackOperation {
 
-	protected Map<String, Integer> idMapping = new HashMap<String, Integer>();
 	private OutputStream out, rawOut;
 	private File tempFile;
 	private Long startTime = -1l;
@@ -284,16 +276,26 @@ class CopyTask extends RollbackOperation {
 	protected int index = 1; // Stores the next index for the item IDs in the palate.
 	protected int count = 0; // Stores the number of blocks in a row
 	protected String lastString = null; // Stores the string representation of the previous block.
+	int startingX, startingY, startingZ;
+	// TODO: Add a chunk unloading system.
+	boolean[][] chunksLoaded; // Stores which chunks started out unloaded.
+	// TODO: Try storing the actual data instead of the string.
+	protected Map<String, Integer> idMapping = new HashMap<String, Integer>();
 
 	public CopyTask(Location min, Location max, OutputStream out, Copy copy, CommandSender sender, String prefix) {
 		this.min = min;
 		this.tempLoc = min.clone();
+		this.startingX = min.getBlockX();
+		this.startingY = min.getBlockY();
+		this.startingZ = min.getBlockZ();
 		this.max = max;
 		this.out = out;
 		this.copy = copy;
 		this.sender = sender;
 		this.prefix = prefix;
 		this.lastChunkX = min.getChunk().getX();
+		chunksLoaded = new boolean[(int) Math.ceil((max.getX() - min.getX()) / 16)][(int) Math
+				.ceil((max.getZ() - min.getZ()) / 16)];
 	}
 
 	@Override
@@ -331,9 +333,9 @@ class CopyTask extends RollbackOperation {
 			count++; // Increments the counter
 		} else {
 			// Searches for existing representation of block.
-			Integer id = copy.idMapping.putIfAbsent(data, index);
+			Integer id = idMapping.putIfAbsent(data, index);
 			try {
-				if(count != 0)
+				if (count != 0)
 					out.write(count); // Writes the last one's count
 				count = 1;
 				if (id == null) {
@@ -364,17 +366,47 @@ class CopyTask extends RollbackOperation {
 	private final void updateVariables() {
 		// Updates variables.
 		blockIndex++;
+
 		tempLoc.setZ(tempLoc.getBlockZ() + 1);
 
-		if (tempLoc.getBlockZ() > max.getBlockZ()) {
-			tempLoc.setZ(min.getBlockZ());
-			tempLoc.setY(tempLoc.getBlockY() + 1);
-		}
-		if (tempLoc.getBlockY() > max.getBlockY()) {
-			tempLoc.setY(min.getBlockY());
-			tempLoc.setX(tempLoc.getBlockX() + 1);
+		// Wrap Z
+		if (tempLoc.getBlockZ() - startingZ >= 16 || tempLoc.getBlockZ() > max.getBlockZ()) {
 
-			checkChunks(tempLoc);
+			// It has gone too far - wrap around
+			// Set Z back to where it started
+			tempLoc.setZ(startingZ);
+			// Move up one
+			tempLoc.setY(tempLoc.getBlockY() + 1);
+
+			// Wrap Y
+			if (tempLoc.getBlockY() > max.getBlockY()) {
+				tempLoc.setY(min.getBlockY());
+
+				// Increment X by one
+				tempLoc.setX(tempLoc.getBlockX() + 1);
+
+				// Wrap X
+				if (tempLoc.getBlockX() - startingX >= 16 || tempLoc.getBlockX() > max.getBlockX()) {
+					// It has gone too far - wrap around
+
+					if (max.getBlockZ() - startingZ < 16) {
+						// It has reached the end of this Z row.
+						// Reset Z, and do nothing to the X, since it is correct.
+						// But move the startingX so it recognizes that.
+						startingX += 16;
+						startingZ = min.getBlockZ();
+						tempLoc.setZ(startingZ);
+
+					} else {
+						// Set X back to where it started
+						// Increment Z by 16 blocks.
+						startingZ += 16;
+						tempLoc.setZ(startingZ);
+						tempLoc.setX(startingX);
+					}
+				}
+				// checkChunks(tempLoc);
+			}
 		}
 	}
 
