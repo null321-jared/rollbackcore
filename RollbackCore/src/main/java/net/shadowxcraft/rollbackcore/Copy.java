@@ -27,55 +27,56 @@ import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
-import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.block.Block;
+import org.bukkit.block.data.BlockData;
 import org.bukkit.command.CommandSender;
 
 import net.shadowxcraft.rollbackcore.events.CopyEndEvent;
 import net.shadowxcraft.rollbackcore.events.EndStatus;
 
 /**
- * This class is used to save a region to a file that can be pasted later to rollback the region.
+ * This class is used to save a region to a file that can be pasted later to
+ * rollback the region.
  * 
  * @see CopyEndEvent
  * @author lizardfreak321
  */
 public class Copy extends RollbackOperation {
-
-	private OutputStream out, rawOut;
+	private int maxX, maxY, maxZ;
+	private OutputStream out;
 	private File tempFile;
-	private Long startTime = -1l;
+	private long startTime = -1l, lastTime;
 	private static final List<Copy> runningCopies = new ArrayList<Copy>();
+	boolean inProgress = false;
+
+	// Specific to the operation at hand.
+	long tick = 0; // Used to keep track of how many ticks the copy operation has run.
+	long blockIndex = 0, lastIndex = 0;// Used to store the index of the block, for statistical reasons.
+	private LRUBlockDataCache cache = new LRUBlockDataCache(1, 255); // Stores IDs for the BlockData
+	private int count = 0; // Stores the number of blocks in a row
+	private int misses = 0; // Stores the number of times the data is written.
+	private BlockData lastData = null; // Stores the string representation of the previous block.
 
 	/**
-	 * Used to schedule a copy. This is the legacy constructor. Used by the copyDistributed method.
+	 * Used to schedule a copy. This is the legacy constructor. Used by the
+	 * copyDistributed method.
 	 * 
-	 * @param minX
-	 *            The X value of the minimum location of the region.
-	 * @param minY
-	 *            The Y value of the minimum location of the region.
-	 * @param minZ
-	 *            The Z value of the minimum location of the region.
-	 * @param maxX
-	 *            The X value of the maximum location of the region.
-	 * @param maxY
-	 *            The X value of the maximum location of the region.
-	 * @param maxZ
-	 *            The Y value of the maximum location of the region.
-	 * @param world
-	 *            The world that the region is in.
-	 * @param fileName
-	 *            The fileName and directory of the folder that will contain the saved data.
-	 *            Recommended: Make a sub-folder in your Main.plugin and put them in there.
-	 * @param sender
-	 *            Where status messages will be sent. Null for no messages, consoleSender for
-	 *            console, and a player for a player.
+	 * @param minX     The X value of the minimum location of the region.
+	 * @param minY     The Y value of the minimum location of the region.
+	 * @param minZ     The Z value of the minimum location of the region.
+	 * @param maxX     The X value of the maximum location of the region.
+	 * @param maxY     The X value of the maximum location of the region.
+	 * @param maxZ     The Y value of the maximum location of the region.
+	 * @param world    The world that the region is in.
+	 * @param fileName The fileName and directory of the folder that will contain
+	 *                 the saved data. Recommended: Make a sub-folder in your
+	 *                 Main.plugin and put them in there.
+	 * @param sender   Where status messages will be sent. Null for no messages,
+	 *                 consoleSender for console, and a player for a player.
 	 */
 	public Copy(int minX, int minY, int minZ, int maxX, int maxY, int maxZ, World world, String fileName,
 			CommandSender sender) {
@@ -86,22 +87,44 @@ public class Copy extends RollbackOperation {
 	/**
 	 * Used to schedule a copy.
 	 * 
-	 * @param min
-	 *            The location that contains data for the min location of the region.
-	 * @param max
-	 *            The location that contains data for the max location of the region.
-	 * @param fileName
-	 *            The fileName and directory of the folder that will contain the saved data.
-	 *            Recommended: Make a sub-folder in your Main.plugin and put them in there.
-	 * @param sender
-	 *            Where status messages will be sent. Null for no messages, consoleSender for
-	 *            console, and a player for a player.
-	 * @param prefix
-	 *            The prefix that will be used when sending messages to the sender.
+	 * @param min      The location that contains data for the min location of the
+	 *                 region.
+	 * @param max      The location that contains data for the max location of the
+	 *                 region.
+	 * @param fileName The fileName and directory of the folder that will contain
+	 *                 the saved data. Recommended: Make a sub-folder in your
+	 *                 Main.plugin and put them in there.
+	 * @param sender   Where status messages will be sent. Null for no messages,
+	 *                 consoleSender for console, and a player for a player.
+	 * @param prefix   The prefix that will be used when sending messages to the
+	 *                 sender.
 	 */
 	public Copy(Location min, Location max, String fileName, CommandSender sender, String prefix) {
-		this.min = min;
-		this.max = max;
+		super(min);
+		this.maxX = max.getBlockX();
+		this.maxY = max.getBlockY();
+		this.maxZ = max.getBlockZ();
+
+		// Input validation and correction.
+		if (!min.getWorld().equals(max.getWorld())) {
+			max.setWorld(min.getWorld());
+		}
+		if (minX > maxX) {
+			int oldMaxX = maxX;
+			maxX = minX;
+			minX = oldMaxX;
+		}
+		if (minY > maxY) {
+			int oldMaxY = maxY;
+			maxY = minY;
+			minY = oldMaxY;
+		}
+		if (minZ > maxZ) {
+			int oldMaxZ = maxZ;
+			maxZ = minZ;
+			minZ = oldMaxZ;
+		}
+
 		if (!fileName.contains(".")) {
 			fileName += ".dat";
 			if (!fileName.contains("/") || !fileName.contains("\\")) {
@@ -111,26 +134,12 @@ public class Copy extends RollbackOperation {
 		this.fileName = fileName;
 		this.sender = sender;
 		this.prefix = prefix;
-		// Input validation and correction.
-		if (!min.getWorld().equals(max.getWorld())) {
-			max.setWorld(min.getWorld());
-		}
-		if (min.getBlockX() > max.getBlockX()) {
-			int maxX = max.getBlockX();
-			max.setX(min.getX());
-			min.setX(maxX);
-		}
-		if (min.getBlockY() > max.getBlockY()) {
-			int maxY = max.getBlockY();
-			max.setY(min.getY());
-			min.setY(maxY);
-		}
-		if (min.getBlockZ() > max.getBlockZ()) {
-			int maxZ = max.getBlockZ();
-			max.setZ(min.getZ());
-			min.setZ(maxZ);
-		}
 
+		tempX = min.getBlockX();
+		tempY = min.getBlockY();
+		tempZ = min.getBlockZ();
+
+		initChunkUnloading(maxZ);
 	}
 
 	/**
@@ -141,7 +150,7 @@ public class Copy extends RollbackOperation {
 	public static final int cancelAll() {
 		int numberOfTasks = runningCopies.size();
 		for (int i = 0; i < numberOfTasks; i++) {
-			runningCopies.get(i).end(EndStatus.FAIL_EXERNAL_TERMONATION);
+			runningCopies.get(i).end(EndStatus.FAIL_EXERNAL_TERMINATION);
 		}
 		return numberOfTasks;
 	}
@@ -152,12 +161,16 @@ public class Copy extends RollbackOperation {
 	@Override
 	public final void run() {
 		// Calls the copy method.
-		copy();
+		if (!inProgress) {
+			initCopy();
+		}
+		copyTask();
 	}
 
 	// The internal method to start the copy operation.
-	protected final boolean copy() {
+	protected final boolean initCopy() {
 		startTime = System.nanoTime();
+		lastTime = startTime;
 		// Checks if there are any currently running pastes of the exact same thing.
 		for (Copy runningCopy : runningCopies) {
 			if (runningCopy.fileName.equals(fileName)) {
@@ -172,11 +185,10 @@ public class Copy extends RollbackOperation {
 		if (!startFile(out))
 			return false;
 
-		CopyTask task = new CopyTask(min, max, out, this, sender, prefix);
-
 		runningCopies.add(this);
 		TaskManager.addTask();
-		taskID = Main.plugin.getServer().getScheduler().scheduleSyncRepeatingTask(Main.plugin, task, 1, 1);
+		task = runTaskTimer(Main.plugin, 1, 1);
+		inProgress = true;
 		return true;
 	}
 
@@ -201,8 +213,7 @@ public class Copy extends RollbackOperation {
 
 		// Initializes the FileOutputStream.
 		try {
-			rawOut = new FileOutputStream(tempFile);
-			out = new BufferedOutputStream(rawOut);
+			out = new BufferedOutputStream(new FileOutputStream(tempFile));
 		} catch (IOException e) {
 			e.printStackTrace();
 			end(EndStatus.FAIL_IO_ERROR);
@@ -220,9 +231,9 @@ public class Copy extends RollbackOperation {
 
 			// Writes the sizes to the file using writeShort because it can be
 			// larger than 255.
-			FileUtilities.writeShort(out, max.getBlockX() - min.getBlockX());
-			FileUtilities.writeShort(out, max.getBlockY() - min.getBlockY());
-			FileUtilities.writeShort(out, max.getBlockZ() - min.getBlockZ());
+			FileUtilities.writeShort(out, maxX - minX);
+			FileUtilities.writeShort(out, maxY - minY);
+			FileUtilities.writeShort(out, maxZ - minZ);
 		} catch (IOException e1) {
 			e1.printStackTrace();
 			end(EndStatus.FAIL_IO_ERROR);
@@ -232,15 +243,15 @@ public class Copy extends RollbackOperation {
 	}
 
 	/**
-	 * Forcefully ends the operation. Sets everything back to the way it should be and closes open
-	 * resources.
+	 * Forcefully ends the operation. Sets everything back to the way it should be
+	 * and closes open resources.
 	 */
 	public final void kill() {
-		end(EndStatus.FAIL_EXERNAL_TERMONATION);
+		end(EndStatus.FAIL_EXERNAL_TERMINATION);
 	}
 
 	// Ends it with that end status.
-	protected final void end(EndStatus endStatus) {
+	private final void end(EndStatus endStatus) {
 		TaskManager.removeTask();
 
 		runningCopies.remove(this);
@@ -252,111 +263,105 @@ public class Copy extends RollbackOperation {
 				e.printStackTrace();
 			}
 		}
-		if (taskID >= 0) {
-			// Ends the repeating task.
-			Bukkit.getScheduler().cancelTask(taskID);
-			taskID = -1;
+		if (task != null && !task.isCancelled()) {
+			cancel();
+			task = null;
 		}
+
 		new CopyEndEvent(this, System.nanoTime() - startTime, endStatus);
 	}
 
-}
+	// ------------- Task ------------
 
-/**
- * CopyTask class, used by the Copy task as a runnable to make copies progressive.
- * 
- * @author LAPTOP
- */
-class CopyTask extends RollbackOperation {
-	final private Location tempLoc;		// Stores the location that is currently being worked on.
-	private final Copy copy;					// Stores the copy object this works with.
-	final OutputStream out;		// Used to read from the file.
-	long tick = 0;		// Used to keep track of how many ticks the copy operation has run.
-	long blockIndex = 0;// Used to store the index of the block, for statistical reasons.
-	protected int index = 1; // Stores the next index for the item IDs in the palate.
-	protected int count = 0; // Stores the number of blocks in a row
-	protected String lastString = null; // Stores the string representation of the previous block.
-	int startingX, startingY, startingZ;
-	// TODO: Add a chunk unloading system.
-	boolean[][] chunksLoaded; // Stores which chunks started out unloaded.
-	// TODO: Try storing the actual data instead of the string.
-	protected Map<String, Integer> idMapping = new HashMap<String, Integer>();
-
-	public CopyTask(Location min, Location max, OutputStream out, Copy copy, CommandSender sender, String prefix) {
-		this.min = min;
-		this.tempLoc = min.clone();
-		this.startingX = min.getBlockX();
-		this.startingY = min.getBlockY();
-		this.startingZ = min.getBlockZ();
-		this.max = max;
-		this.out = out;
-		this.copy = copy;
-		this.sender = sender;
-		this.prefix = prefix;
-		this.lastChunkX = min.getChunk().getX();
-		chunksLoaded = new boolean[(int) Math.ceil((max.getX() - min.getX()) / 16)][(int) Math
-				.ceil((max.getZ() - min.getZ()) / 16)];
-	}
-
-	@Override
-	public void run() {
-		long startTime = System.nanoTime(); // Used to keep track of time.
+	private void copyTask() {
+		long startTime = System.currentTimeMillis(); // Used to keep track of time.
 		tick++; // Increments the tick variable.
 
 		boolean skip = false; // To know when to quit the loop for that tick.
 
-		while (tempLoc.getBlockX() <= max.getBlockX() && !skip) {
-			nextBlock();
+		while (!skip && inProgress) {
+			for (int i = 0; inProgress && i < 500; i++) {
+				nextBlock();
+			}
 			// Checks if it has run out of time.
-			if (System.nanoTime() - startTime > TaskManager.getMaxTime() * 1000000) {
+			if (System.currentTimeMillis() - startTime > TaskManager.getMaxTime()) {
 				skip = true;
 			} else {
 				skip = false;
 			}
 		}
 
-		statusMessage(min, max, blockIndex, tick);
-		if (tempLoc.getBlockX() > max.getBlockX()) {
-			finish();
+		statusMessage();
+		if (tempX > maxX) {
+			Main.plugin.getLogger().info("Number of cache misses blocks: " + misses);
+			end(EndStatus.SUCCESS);
+		}
+	}
+
+	private final void statusMessage() {
+		if (sender != null && tick % 100 == 0) {
+			long currentTime = System.nanoTime();
+			int sizeX = maxX - minX;
+			int sizeY = maxY - minY;
+			int sizeZ = maxZ - minZ;
+			long maxBlocks = sizeX * sizeY;
+			maxBlocks *= sizeZ;
+			double percent = (blockIndex / (double) maxBlocks) * 100;
+			sender.sendMessage(prefix + "Working on copy operation; " + new DecimalFormat("#.0").format(percent)
+					+ "% done (" + blockIndex + "/" + maxBlocks + ", "
+					+ ((1000000000 * (blockIndex - lastIndex)) / (currentTime - lastTime)) + " blocks/second)");
+
+			lastIndex = blockIndex;
+			lastTime = currentTime;
 		}
 	}
 
 	private final void nextBlock() {
-		// Gets the location from the XYZ of the for loops.
+		if (tempY == minY) { // For efficiency.
+			nextLocation(tempX, tempZ);
+		}
 
 		// Gets the block at the current location.
-		Block block = tempLoc.getBlock();
+		Block block = world.getBlockAt(tempX, tempY, tempZ);
 
 		// Gets the value and ID of the block at the location.
-		String data = block.getBlockData().getAsString();
-		if (count < 255 && data.equals(lastString)) {
+		BlockData data = block.getBlockData();
+
+		// Even with the null check, it appears that
+		if (count < 65280 && lastData != null && data.hashCode() == lastData.hashCode()) {
 			count++; // Increments the counter
 		} else {
 			// Searches for existing representation of block.
-			Integer id = idMapping.putIfAbsent(data, index);
+			int id = cache.get(data);
 			try {
-				if (count != 0)
+				if (count <= 255)
 					out.write(count); // Writes the last one's count
+				else {
+					out.write(0);
+					FileUtilities.writeShort(out, count);
+				}
 				count = 1;
-				if (id == null) {
+				if (id == -1) {
+					id = cache.add(data);
+					misses++;
 					// New block.
-					// TODO: Support more than 255 IDs.
+
 					// It was absent, so writes it to the file,
 					// then increments the index.
+					String dataAsString = data.getAsString();
 					out.write(0); // Notes new data.
-					out.write(data.length()); // Length of the data.
-					out.write(data.getBytes(StandardCharsets.ISO_8859_1));
+					out.write(dataAsString.length()); // Length of the data.
+					out.write(dataAsString.getBytes(StandardCharsets.ISO_8859_1));
 
-					out.write(index); // Now writes the index.
-					index++; // Indexes it for the next one.
+					out.write(id);
 				} else {
-					out.write(id.intValue()); // ID
+					out.write(id); // Now writes the index.
 				}
 			} catch (IOException e) {
 				e.printStackTrace();
-				copy.end(EndStatus.FAIL_IO_ERROR);
+				end(EndStatus.FAIL_IO_ERROR);
 			}
-			lastString = data;
+			lastData = data;
 		}
 
 		updateVariables();
@@ -366,65 +371,23 @@ class CopyTask extends RollbackOperation {
 	private final void updateVariables() {
 		// Updates variables.
 		blockIndex++;
-
-		tempLoc.setZ(tempLoc.getBlockZ() + 1);
+		// Move Z
+		tempZ++;
 
 		// Wrap Z
-		if (tempLoc.getBlockZ() - startingZ >= 16 || tempLoc.getBlockZ() > max.getBlockZ()) {
-
-			// It has gone too far - wrap around
-			// Set Z back to where it started
-			tempLoc.setZ(startingZ);
-			// Move up one
-			tempLoc.setY(tempLoc.getBlockY() + 1);
+		if (tempZ > maxZ) {
+			tempZ = minZ;
+			// Move Y
+			tempY++;
 
 			// Wrap Y
-			if (tempLoc.getBlockY() > max.getBlockY()) {
-				tempLoc.setY(min.getBlockY());
+			if (tempY > maxY) {
+				tempY = minY;
 
-				// Increment X by one
-				tempLoc.setX(tempLoc.getBlockX() + 1);
-
-				// Wrap X
-				if (tempLoc.getBlockX() - startingX >= 16 || tempLoc.getBlockX() > max.getBlockX()) {
-					// It has gone too far - wrap around
-
-					if (max.getBlockZ() - startingZ < 16) {
-						// It has reached the end of this Z row.
-						// Reset Z, and do nothing to the X, since it is correct.
-						// But move the startingX so it recognizes that.
-						startingX += 16;
-						startingZ = min.getBlockZ();
-						tempLoc.setZ(startingZ);
-
-					} else {
-						// Set X back to where it started
-						// Increment Z by 16 blocks.
-						startingZ += 16;
-						tempLoc.setZ(startingZ);
-						tempLoc.setX(startingX);
-					}
-				}
-				// checkChunks(tempLoc);
+				// Move X - does not need wrapping
+				tempX += 1;
 			}
 		}
 	}
 
-	private final void finish() {
-		System.out.println("Number of unique blocks: " + index);
-		copy.end(EndStatus.SUCCESS);
-	}
-
-	protected final void statusMessage(Location min, Location max, long index, long tick) {
-		if (sender != null && tick % 100 == 0) {
-			int sizeX = max.getBlockX() - min.getBlockX();
-			int sizeY = max.getBlockY() - min.getBlockY();
-			int sizeZ = max.getBlockZ() - min.getBlockZ();
-			long maxBlocks = sizeX * sizeY;
-			maxBlocks *= sizeZ;
-			double percent = (index / (double) maxBlocks) * 100;
-			sender.sendMessage(prefix + "Working on copy operation; " + new DecimalFormat("#.0").format(percent)
-					+ "% done (" + index + "/" + maxBlocks + ")");
-		}
-	}
 }

@@ -77,6 +77,8 @@ public class Commands implements CommandExecutor {
 						helpCommand(sender);
 					} else if (args[0].equalsIgnoreCase("cancel") || args[0].equalsIgnoreCase("cancelall")) {
 						sender.sendMessage(prefix + "Canceled " + TaskManager.cancelAllTasks() + " tasks.");
+					} else if (args[0].equalsIgnoreCase("chunkLoaded")) {
+						chunkCommand(sender, args);
 					} else {
 						sender.sendMessage(ChatColor.RED + "Unknown comand!");
 						helpCommand(sender);
@@ -164,7 +166,7 @@ public class Commands implements CommandExecutor {
 					prefix + "Usage: /rollback paste [<x> <y> <z> <world>] <file> [-clearEntities -ignoreAir]");
 		}
 	}
-
+	
 	private final void copyCommand(CommandSender sender, String args[]) {
 		if (args.length == 2) {
 			// For /rollback copy <file>
@@ -175,6 +177,22 @@ public class Commands implements CommandExecutor {
 				sender.sendMessage(prefix + "Only players can use this command!");
 		} else {
 			sender.sendMessage(prefix + "Usage: /rollback copy <output-file>");
+		}
+	}
+
+	private final void chunkCommand(CommandSender sender, String args[]) {
+		if (args.length == 4) {
+			// For /rollback chunkloaded <world> <x> <z>
+			World world = Bukkit.getServer().getWorld(args[1]);
+			try {
+				sender.sendMessage(prefix + "Chunk is loaded: " +
+						world.isChunkLoaded(Integer.parseInt(args[2]),
+								Integer.parseInt(args[3])));
+			} catch (NumberFormatException e) {
+				sender.sendMessage(prefix + "Failed to parse arguements.");
+			}
+		} else {
+			sender.sendMessage(prefix + "Usage: /rollback chunkloaded <world> <x> <z>");
 		}
 	}
 

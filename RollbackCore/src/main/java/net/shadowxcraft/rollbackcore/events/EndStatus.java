@@ -27,7 +27,7 @@ public enum EndStatus {
 	FAIL_NO_SUCH_FILE("failed because that file does not exist!"),
 	FAIL_INCOMPATIBLE_VERSION("failed because the version of the file is incompatible!"),
 	FAIL_DUPLICATE("failed because it is a duplicate operation."),
-	FAIL_EXERNAL_TERMONATION("was termonated early!"),
+	FAIL_EXERNAL_TERMINATION("was terminated early!"),
 	FAIL_UNKNOWN_WORLD("failed because the world cannot be found!");
 
 	private final String description;

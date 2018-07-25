@@ -1,8 +1,46 @@
 package net.shadowxcraft.rollbackcore;
 
-public class LegacyUpdater {
+import java.util.Arrays;
 
-	public static String[] legacyMaterialNames = new String[] { "AIR", "STONE", "GRASS", "DIRT", "COBBLESTONE", "WOOD",
+public class LegacyUpdater {
+	
+	/**
+	 * The list of blocks that the plugin skipped saving the data for in file format 1 for backwards
+	 * compatibility. It is updated to Minecraft 1.9 with some missing blocks. Must be sorted.
+	 */
+	final static int[] version1Blocks = { 0, 2, 4, 7, 13, 14, 15, 16, 20, 21, 22, 23, 30, 37, 39, 40, 41, 42, 45, 46,
+			47, 48, 49, 51, 52, 56, 57, 58, 70, 72, 73, 74, 79, 80, 81, 82, 83, 84, 87, 88, 89, 101, 102, 103, 112, 113,
+			116, 117, 118, 121, 122, 123, 124, 129, 133, 137, 138, 147, 148, 152, 153, 165, 166, 169, 172, 173, 174,
+			188, 189, 190, 191, 192, 201, 202, 206 };
+
+	/**
+	 * List of blocks that the plugin will skip in the newest version of the plugin. Currently
+	 * updated to Minecaft 1.10 Must be sorted.
+	 * 
+	 * @since 2.0
+	 */
+	final static int[] simpleBlocks = { 0, 2, 4, 7, 13, 14, 15, 16, 20, 21, 22, 23, 30, 37, 39, 40, 41, 42, 45, 47, 48,
+			49, 51, 52, 56, 57, 58, 70, 72, 73, 74, 79, 80, 81, 82, 83, 84, 87, 88, 89, 101, 102, 103, 112, 113, 116,
+			117, 118, 121, 122, 123, 124, 129, 133, 137, 138, 147, 148, 152, 153, 165, 166, 169, 172, 173, 174, 188,
+			189, 190, 191, 192, 201, 202, 206, 208, 209, 213, 214, 215 };
+
+	/**
+	 * This method returns if the block is "simple", meaning its data value doesn't need to be
+	 * stored. For internal use only.
+	 * 
+	 * @param id
+	 *            The ID of the block being tested for the simple property.
+	 * @param simpleBlocks
+	 *            The list of characters (Used instead of bytes since chars are unsigned) that are
+	 *            considered "Simple"
+	 * @return If the block is simple
+	 */
+	protected static final boolean isSimple(int id, int[] simpleBlocks) {
+		// Binary search is very efficient, but it must be sorted.
+		return Arrays.binarySearch(simpleBlocks, id) >= 0;
+	}
+
+	public static final String[] legacyMaterialNames = new String[] { "AIR", "STONE", "GRASS", "DIRT", "COBBLESTONE", "WOOD",
 			"SAPLING", "BEDROCK", "WATER", "STATIONARY_WATER", "LAVA", "STATIONARY_LAVA", "SAND", "GRAVEL", "GOLD_ORE",
 			"IRON_ORE", "COAL_ORE", "LOG", "LEAVES", "SPONGE", "GLASS", "LAPIS_ORE", "LAPIS_BLOCK", "DISPENSER",
 			"SANDSTONE", "NOTE_BLOCK", "BED_BLOCK", "POWERED_RAIL", "DETECTOR_RAIL", "PISTON_STICKY_BASE", "WEB",

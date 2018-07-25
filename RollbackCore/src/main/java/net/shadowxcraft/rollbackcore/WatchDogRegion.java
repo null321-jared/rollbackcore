@@ -101,7 +101,7 @@ public class WatchDogRegion {
 		for (WatchDogRegion wd : watchDogs)
 			if (wd.rollbackTask != -1) {
 				Bukkit.getScheduler().cancelTask(wd.rollbackTask);
-				new WDRollbackEndEvent(wd, 0, 0, EndStatus.FAIL_EXERNAL_TERMONATION);
+				new WDRollbackEndEvent(wd, 0, 0, EndStatus.FAIL_EXERNAL_TERMINATION);
 				wd.min.getWorld().setAutoSave(wd.originalWorldSaveSetting);
 				TaskManager.removeTask();
 			}

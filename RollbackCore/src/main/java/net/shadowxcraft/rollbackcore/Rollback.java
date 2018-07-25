@@ -296,7 +296,7 @@ public class Rollback {
 
 			Paste paste = new Paste(min.getBlockX(), min.getBlockY(), min.getBlockZ(), player.getWorld(), name, null,
 					player);
-			Bukkit.getScheduler().runTaskLater(Main.plugin, paste, 1);
+			paste.runTaskLater(Main.plugin, 1);
 
 		} else {
 			// Lets the player know there's no selection.
@@ -381,6 +381,6 @@ public class Rollback {
 		}
 
 		// Schedules the first paste task to run.
-		Bukkit.getScheduler().runTaskLater(Main.plugin, pastes.get(0), 1);
+		pastes.get(0).runTaskLater(Main.plugin, 1);
 	}
 }

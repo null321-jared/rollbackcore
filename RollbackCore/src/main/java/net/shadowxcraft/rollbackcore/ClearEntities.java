@@ -196,14 +196,16 @@ class ClearEntitiesTask extends BukkitRunnable {
 	private void fullClear() {
 		Location location = new Location(min.getWorld(), tempX, 0, tempZ);
 		// Gets the chunk at that location.
+		boolean wasLoaded = location.getWorld().isChunkLoaded(tempX >> 4, tempZ >> 4);
 		Chunk chunk = location.getChunk();
 
 		// Clears all of its entities.
 		clearEntitiesInChunk(chunk);
 
-		// Unloads that chunk to save RAM.
-		RollbackOperation.safeUnloadChunk(chunk);
-
+		if(!wasLoaded) {
+			chunk.unload();
+		}
+		
 		// Updates X and Z.
 		tempZ += CHUNK_SIZE;
 
