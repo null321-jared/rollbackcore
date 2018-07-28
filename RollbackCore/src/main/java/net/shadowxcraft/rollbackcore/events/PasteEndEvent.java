@@ -28,9 +28,9 @@ import net.shadowxcraft.rollbackcore.Paste;
  */
 public class PasteEndEvent extends RollbackEvent {
 	private final Paste paste;
-	private final int blocksChanged;
+	private final long blocksChanged;
 
-	public PasteEndEvent(Paste paste, long nanoSecondsTaken, int blocksChanged, EndStatus endStatus) {
+	public PasteEndEvent(Paste paste, long nanoSecondsTaken, long blocksChanged, EndStatus endStatus) {
 		this.paste = paste;
 		this.nanoSecondsTaken = nanoSecondsTaken;
 		this.blocksChanged = blocksChanged;
@@ -52,7 +52,7 @@ public class PasteEndEvent extends RollbackEvent {
 	/**
 	 * @return The number of blocks that were changed when pasting.
 	 */
-	public int getBlocksChanged() {
+	public long getBlocksChanged() {
 		return blocksChanged;
 	}
 

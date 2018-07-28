@@ -24,17 +24,19 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.nio.charset.StandardCharsets;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.data.BlockData;
 import org.bukkit.command.CommandSender;
 
+import net.jpountz.lz4.LZ4BlockOutputStream;
+import net.jpountz.lz4.LZ4Factory;
 import net.shadowxcraft.rollbackcore.events.CopyEndEvent;
 import net.shadowxcraft.rollbackcore.events.EndStatus;
 
@@ -48,7 +50,7 @@ import net.shadowxcraft.rollbackcore.events.EndStatus;
 public class Copy extends RollbackOperation {
 	private int maxX, maxY, maxZ;
 	private OutputStream out;
-	private File tempFile;
+	private File file;
 	private long startTime = -1l, lastTime;
 	private static final List<Copy> runningCopies = new ArrayList<Copy>();
 	boolean inProgress = false;
@@ -58,7 +60,6 @@ public class Copy extends RollbackOperation {
 	long blockIndex = 0, lastIndex = 0;// Used to store the index of the block, for statistical reasons.
 	private LRUBlockDataCache cache = new LRUBlockDataCache(1, 255); // Stores IDs for the BlockData
 	private int count = 0; // Stores the number of blocks in a row
-	private int misses = 0; // Stores the number of times the data is written.
 	private BlockData lastData = null; // Stores the string representation of the previous block.
 
 	/**
@@ -100,30 +101,10 @@ public class Copy extends RollbackOperation {
 	 *                 sender.
 	 */
 	public Copy(Location min, Location max, String fileName, CommandSender sender, String prefix) {
-		super(min);
+		super(validateLocations(min, max), false);
 		this.maxX = max.getBlockX();
 		this.maxY = max.getBlockY();
 		this.maxZ = max.getBlockZ();
-
-		// Input validation and correction.
-		if (!min.getWorld().equals(max.getWorld())) {
-			max.setWorld(min.getWorld());
-		}
-		if (minX > maxX) {
-			int oldMaxX = maxX;
-			maxX = minX;
-			minX = oldMaxX;
-		}
-		if (minY > maxY) {
-			int oldMaxY = maxY;
-			maxY = minY;
-			minY = oldMaxY;
-		}
-		if (minZ > maxZ) {
-			int oldMaxZ = maxZ;
-			maxZ = minZ;
-			minZ = oldMaxZ;
-		}
 
 		if (!fileName.contains(".")) {
 			fileName += ".dat";
@@ -135,11 +116,35 @@ public class Copy extends RollbackOperation {
 		this.sender = sender;
 		this.prefix = prefix;
 
-		tempX = min.getBlockX();
-		tempY = min.getBlockY();
-		tempZ = min.getBlockZ();
-
 		initChunkUnloading(maxZ);
+	}
+
+	/**
+	 * Properly validates the input min max locations.
+	 * 
+	 * @return The min location
+	 */
+	private static Location validateLocations(Location min, Location max) {
+		// Input validation and correction.
+		if (!min.getWorld().equals(max.getWorld())) {
+			max.setWorld(min.getWorld());
+		}
+		if (min.getX() > max.getX()) {
+			double oldMaxX = max.getX();
+			max.setX(min.getX());
+			min.setX(oldMaxX);
+		}
+		if (min.getY() > max.getY()) {
+			double oldMaxY = max.getY();
+			max.setY(min.getY());
+			min.setY(oldMaxY);
+		}
+		if (min.getZ() > max.getZ()) {
+			double oldMaxZ = max.getZ();
+			max.setZ(min.getZ());
+			min.setZ(oldMaxZ);
+		}
+		return min;
 	}
 
 	/**
@@ -182,12 +187,12 @@ public class Copy extends RollbackOperation {
 		if (!initializeStream())
 			return false;
 
-		if (!startFile(out))
+		if (!startFile())
 			return false;
 
 		runningCopies.add(this);
 		TaskManager.addTask();
-		task = runTaskTimer(Main.plugin, 1, 1);
+		task = Bukkit.getScheduler().runTaskTimer(Main.plugin, this, 1, 1);
 		inProgress = true;
 		return true;
 	}
@@ -195,17 +200,17 @@ public class Copy extends RollbackOperation {
 	// Prepares the file and stream.
 	private final boolean initializeStream() {
 		// Initializes the file
-		tempFile = new File(fileName);
-		if (tempFile.exists()) {
+		file = new File(fileName);
+		if (file.exists()) {
 			// Deletes it if it exists so it starts over.
-			tempFile.delete();
+			file.delete();
 		}
 
 		// Creates the file.
 		try {
-			tempFile.createNewFile();
+			file.createNewFile();
 		} catch (IOException e) {
-			System.out.print("Path: " + tempFile.getAbsolutePath());
+			System.out.print("Path: " + file.getAbsolutePath());
 			e.printStackTrace();
 			end(EndStatus.FAIL_IO_ERROR);
 			return false;
@@ -213,7 +218,7 @@ public class Copy extends RollbackOperation {
 
 		// Initializes the FileOutputStream.
 		try {
-			out = new BufferedOutputStream(new FileOutputStream(tempFile));
+			out = new FileOutputStream(file);
 		} catch (IOException e) {
 			e.printStackTrace();
 			end(EndStatus.FAIL_IO_ERROR);
@@ -223,17 +228,44 @@ public class Copy extends RollbackOperation {
 	}
 
 	// Writes the initial data- Version, blocks, and size.
-	private final boolean startFile(OutputStream out) {
+	private final boolean startFile() {
 		// Writes the version so that the plugin can convert/reject incompatible
 		// versions.
 		try {
 			out.write(VERSION);
-
-			// Writes the sizes to the file using writeShort because it can be
-			// larger than 255.
+			// Writes the min-max differences to the file using writeShort
+			// because it can be larger than 255.
 			FileUtilities.writeShort(out, maxX - minX);
 			FileUtilities.writeShort(out, maxY - minY);
 			FileUtilities.writeShort(out, maxZ - minZ);
+
+			// After here, put as many non-empty strings as wanted, followed by a 0/null.
+			// They should all be key, followed by value.
+
+			// Key
+			FileUtilities.writeShortString(out, "minecraft_version");
+			// Value
+			FileUtilities.writeShortString(out, mcVersion);
+
+			// Key
+			FileUtilities.writeShortString(out, "compression");
+			// Value
+			FileUtilities.writeShortString(out, Config.compressionType.name());
+
+			switch (Config.compressionType) {
+			default:
+			case LZ4:
+				out = new LZ4BlockOutputStream(out, 1 << 16, LZ4Factory.fastestInstance().highCompressor());
+				break;
+			case NONE:
+				out = new BufferedOutputStream(out);
+				break;
+			// out = new DeflaterOutputStream(out); // Corrupts the data- Appears to be a
+			// java issue.
+			// out = new GZIPOutputStream(out);
+			}
+
+			// Write 0, but the empty count value already does that!
 		} catch (IOException e1) {
 			e1.printStackTrace();
 			end(EndStatus.FAIL_IO_ERROR);
@@ -252,6 +284,8 @@ public class Copy extends RollbackOperation {
 
 	// Ends it with that end status.
 	private final void end(EndStatus endStatus) {
+		inProgress = false;
+
 		TaskManager.removeTask();
 
 		runningCopies.remove(this);
@@ -264,7 +298,7 @@ public class Copy extends RollbackOperation {
 			}
 		}
 		if (task != null && !task.isCancelled()) {
-			cancel();
+			task.cancel();
 			task = null;
 		}
 
@@ -273,7 +307,7 @@ public class Copy extends RollbackOperation {
 
 	// ------------- Task ------------
 
-	private void copyTask() {
+	private final void copyTask() {
 		long startTime = System.currentTimeMillis(); // Used to keep track of time.
 		tick++; // Increments the tick variable.
 
@@ -282,20 +316,24 @@ public class Copy extends RollbackOperation {
 		while (!skip && inProgress) {
 			for (int i = 0; inProgress && i < 500; i++) {
 				nextBlock();
+				if (tempX > maxX) {
+					try {
+						writeCount();
+					} catch (IOException e) {
+						end(EndStatus.FAIL_IO_ERROR);
+						e.printStackTrace();
+					}
+					if (inProgress)
+						end(EndStatus.SUCCESS);
+				}
 			}
 			// Checks if it has run out of time.
 			if (System.currentTimeMillis() - startTime > TaskManager.getMaxTime()) {
 				skip = true;
-			} else {
-				skip = false;
 			}
 		}
 
 		statusMessage();
-		if (tempX > maxX) {
-			Main.plugin.getLogger().info("Number of cache misses blocks: " + misses);
-			end(EndStatus.SUCCESS);
-		}
 	}
 
 	private final void statusMessage() {
@@ -328,30 +366,24 @@ public class Copy extends RollbackOperation {
 		BlockData data = block.getBlockData();
 
 		// Even with the null check, it appears that
-		if (count < 65280 && lastData != null && data.hashCode() == lastData.hashCode()) {
+		if (count < 65535 && lastData != null && data.equals(lastData)) {
 			count++; // Increments the counter
 		} else {
 			// Searches for existing representation of block.
 			int id = cache.get(data);
 			try {
-				if (count <= 255)
-					out.write(count); // Writes the last one's count
-				else {
-					out.write(0);
-					FileUtilities.writeShort(out, count);
-				}
+				writeCount();
 				count = 1;
 				if (id == -1) {
 					id = cache.add(data);
-					misses++;
 					// New block.
+
+					String dataAsString = data.getAsString();
 
 					// It was absent, so writes it to the file,
 					// then increments the index.
-					String dataAsString = data.getAsString();
 					out.write(0); // Notes new data.
-					out.write(dataAsString.length()); // Length of the data.
-					out.write(dataAsString.getBytes(StandardCharsets.ISO_8859_1));
+					FileUtilities.writeShortString(out, dataAsString);
 
 					out.write(id);
 				} else {
@@ -366,6 +398,15 @@ public class Copy extends RollbackOperation {
 
 		updateVariables();
 
+	}
+
+	private final void writeCount() throws IOException {
+		if (count <= 255) {
+			out.write(count); // Writes the last one's count
+		} else {
+			out.write(0);
+			FileUtilities.writeShort(out, count);
+		}
 	}
 
 	private final void updateVariables() {

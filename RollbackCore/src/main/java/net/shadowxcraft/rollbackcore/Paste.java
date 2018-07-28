@@ -23,9 +23,11 @@ import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 
 import org.bukkit.Bukkit;
@@ -33,9 +35,10 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
-import org.bukkit.block.Sign;
+import org.bukkit.block.data.BlockData;
 import org.bukkit.command.CommandSender;
 
+import net.jpountz.lz4.LZ4BlockInputStream;
 import net.shadowxcraft.rollbackcore.events.EndStatus;
 import net.shadowxcraft.rollbackcore.events.PasteEndEvent;
 
@@ -46,9 +49,10 @@ import net.shadowxcraft.rollbackcore.events.PasteEndEvent;
  * @author lizardfreak321
  */
 public class Paste extends RollbackOperation {
+	private static final List<Paste> runningPastes = new ArrayList<Paste>();
 
-	// Used to store the X, Y, and Z of where it's getting pasted.
-	private final Location min;
+	private int maxX, maxY, maxZ;
+	private int sizeX, sizeY, sizeZ;
 	// Used to store the pastes so that this class can start a new paste in
 	// distributed pastes.
 	private ArrayList<Paste> pastes = null;
@@ -58,70 +62,68 @@ public class Paste extends RollbackOperation {
 	// Keeps track of if entities should be cleared.
 	private final boolean clearEntities;
 	private final boolean ignoreAir;
-	protected PasteTask pasteTask;		// The paste task of this paste.
-	protected long startPasteTime = -1; // The nano-time the paste started at.
-	protected int blocksChanged = 0;	// The number of blocks changed, for statistical reasons.
-	private BufferedInputStream in;
+	// Stored for efficiency.
+	private static BlockData air = Bukkit.createBlockData(Material.AIR),
+			caveAir = Bukkit.createBlockData(Material.CAVE_AIR);
+	private InputStream in;
 	private File file;
-	// Variables used to store the per-block values.
-	private int sizeX;
-	private int sizeY;
-	private int sizeZ;
-	private int version;
-	int[] simpleBlocks = version1Blocks;
-	private static final List<Paste> runningPastes = new ArrayList<Paste>();
+	private long startTime = -1l, lastTime, totalTime;
+	boolean inProgress = false;
+	private int copyVersion;
+
+	// Specific to the operation at hand.
+	long tick = 0; // Used to keep track of how many ticks the copy operation has run.
+	long blockIndex = 0, lastIndex, blocksChanged;// Used to store the index of the block, for
+													// statistical reasons.
+	// TODO: Optimize the cache and the loading of the data.
+	private HashMap<Integer, BlockData> dataCache = new HashMap<Integer, BlockData>(); // Stores the
+																						// blockdata
+																						// for the
+																						// IDs.
+	public final CommandSender sender; // The sender that all messages are sent to.
+	public final String prefix; // The prefix all messages will have.
 
 	/**
 	 * The legacy constructor for backwards compatibility.
 	 * 
-	 * @param x
-	 *            Where the min-x of the paste will be pasted.
-	 * @param y
-	 *            Where the min-y of the paste will be pasted.
-	 * @param z
-	 *            Where the min-z of the paste will be pasted.
-	 * @param world
-	 *            What world the paste will be pasted in.
-	 * @param fileName
-	 *            The directory of the files.
-	 * @param pastes
-	 *            An optional ArrayList of pastes that will run after this one, allowing them to be
-	 *            distributed. Set to null if you don't want a paste to follow.
-	 * @param sender
-	 *            The person who will get status messages. Use null for no messages, and
-	 *            consoleSender for console.
+	 * @param x        Where the min-x of the paste will be pasted.
+	 * @param y        Where the min-y of the paste will be pasted.
+	 * @param z        Where the min-z of the paste will be pasted.
+	 * @param world    What world the paste will be pasted in.
+	 * @param fileName The directory of the files.
+	 * @param pastes   An optional ArrayList of pastes that will run after this one,
+	 *                 allowing them to be distributed. Set to null if you don't
+	 *                 want a paste to follow.
+	 * @param sender   The person who will get status messages. Use null for no
+	 *                 messages, and consoleSender for console.
 	 */
-	public Paste(int x, int y, int z, World world, String fileName, ArrayList<Paste> pastes, CommandSender sender) {
+	public Paste(int x, int y, int z, World world, String fileName, ArrayList<Paste> pastes,
+			CommandSender sender) {
 		this(new Location(world, x, y, z), fileName, sender, false, false, Main.prefix);
 		this.pastes = pastes;
 	}
 
 	/**
-	 * Used to create a new paste operation instance that can be used to paste the file.
+	 * Used to create a new paste operation instance that can be used to paste the
+	 * file.
 	 * 
-	 * @param x
-	 *            Where the min-x of the paste will be pasted.
-	 * @param y
-	 *            Where the min-y of the paste will be pasted.
-	 * @param z
-	 *            Where the min-z of the paste will be pasted.
-	 * @param world
-	 *            What world the paste will be pasted in.
-	 * @param fileName
-	 *            The path of the file
-	 * @param sender
-	 *            The person who will get status messages. Use null for no messages, and
-	 *            consoleSender for console.
-	 * @param clearEntities
-	 *            Used to specify if the paste operation will schedule the removal of the entities.
-	 * @param prefix
-	 *            Used for the prefix shown in the messages.
-	 * @param ignoreAir
-	 *            Not check blocks that are air in the file. May be useful for some plugins.
+	 * @param x             Where the min-x of the paste will be pasted.
+	 * @param y             Where the min-y of the paste will be pasted.
+	 * @param z             Where the min-z of the paste will be pasted.
+	 * @param world         What world the paste will be pasted in.
+	 * @param fileName      The path of the file
+	 * @param sender        The person who will get status messages. Use null for no
+	 *                      messages, and consoleSender for console.
+	 * @param clearEntities Used to specify if the paste operation will schedule the
+	 *                      removal of the entities.
+	 * @param prefix        Used for the prefix shown in the messages.
+	 * @param ignoreAir     Not check blocks that are air in the file. May be useful
+	 *                      for some plugins.
 	 */
-	public Paste(Location min, String fileName, CommandSender sender, boolean clearEntities, boolean ignoreAir,
-			String prefix) {
-		this.min = min;
+	public Paste(Location min, String fileName, CommandSender sender, boolean clearEntities,
+			boolean ignoreAir, String prefix) {
+		super(min, true);
+
 		this.originalWorldSaveSetting = min.getWorld().isAutoSave();
 		min.getWorld().setAutoSave(false);
 		if (!fileName.contains(".")) {
@@ -140,7 +142,7 @@ public class Paste extends RollbackOperation {
 	public static int cancelAll() {
 		int numberOfTasks = runningPastes.size();
 		for (int i = 0; i < numberOfTasks; i++)
-			runningPastes.get(i).end(EndStatus.FAIL_EXERNAL_TERMONATION);
+			runningPastes.get(i).end(EndStatus.FAIL_EXERNAL_TERMINATION);
 		return numberOfTasks;
 	}
 
@@ -149,47 +151,48 @@ public class Paste extends RollbackOperation {
 	 */
 	@Override
 	public void run() {
-		paste();
+		// Calls the copy method.
+		if (!inProgress) {
+			initPaste();
+		}
+		pasteTask();
 	}
 
-	/**
-	 * Runs the paste operation.
-	 */
-	protected final void paste() {
-		if (startPasteTime == -1)
-			startPasteTime = System.nanoTime();
+	// The internal method to start the copy operation.
+	protected final boolean initPaste() {
+		startTime = System.nanoTime();
+		lastTime = startTime;
 		// Checks if there are any currently running pastes of the exact same thing.
 		for (Paste runningPaste : runningPastes) {
-			if (runningPaste.fileName.equals(fileName) && runningPaste.min.getBlockX() == min.getBlockX()
-					&& runningPaste.min.getBlockY() == min.getBlockY()
-					&& runningPaste.min.getBlockZ() == min.getBlockZ()) {
-				new PasteEndEvent(this, 0, 0, EndStatus.FAIL_DUPLICATE);
-				return;
+			if (runningPaste.fileName.equals(fileName) && runningPaste.minX == minX
+					&& runningPaste.minY == minY && runningPaste.minZ == minZ) {
+				end(EndStatus.FAIL_DUPLICATE);
+				return false;
 			}
 		}
 
 		TaskManager.addTask();
 
 		if (!initializeFile()) {
-			return;
+			return false;
 		}
 
 		if (!readFile()) {
-			return;
+			return false;
 		}
 
-		if (clearEntities)
-			new ClearEntities(min, max, null, false).progressiveClearEntities();
+		if (clearEntities) {
+			new ClearEntities(new Location(world, minX, minY, minZ),
+					new Location(world, maxX, maxY, maxZ), null, false).progressiveClearEntities();
+		}
 
-		// Creates the new paste task, used for progressive pasting.
-		PasteTask task = new PasteTask(min, max, in, this, simpleBlocks, ignoreAir, sender, prefix);
-
-		this.pasteTask = task;
 		runningPastes.add(this);
 
 		// Schedules the repeating task for the pasting.
-		taskID = Main.plugin.getServer().getScheduler().scheduleSyncRepeatingTask(Main.plugin, task, 1, 1);
-
+		TaskManager.addTask();
+		task = Bukkit.getScheduler().runTaskTimer(Main.plugin, this, 1, 1);
+		inProgress = true;
+		return true;
 	}
 
 	private final boolean initializeFile() {
@@ -204,7 +207,7 @@ public class Paste extends RollbackOperation {
 
 		try {
 			// Initializes the InputStream
-			in = new BufferedInputStream(new FileInputStream(file));
+			in = new FileInputStream(file);
 		} catch (IOException e) {
 			e.printStackTrace();
 			end(EndStatus.FAIL_IO_ERROR);
@@ -217,276 +220,225 @@ public class Paste extends RollbackOperation {
 		try {
 			// In case the file they are trying to read is in of date or too
 			// new.
-			version = in.read();
+			copyVersion = in.read();
 
-			if (version != 0 && version != 1) {
+			if (copyVersion != VERSION) {
 				end(EndStatus.FAIL_INCOMPATIBLE_VERSION);
-				in.close();
 				return false;
-			}
-
-			if (version == 1) {
-				int length = in.read();
-				simpleBlocks = new int[length];
-				for (int i = 0; i < length; i++)
-					simpleBlocks[i] = (char) in.read();
-			} else {
-				simpleBlocks = version1Blocks;
 			}
 
 			// Reads the sizes using readShort because it can be larger than 255
 			sizeX = FileUtilities.readShort(in);
 			sizeY = FileUtilities.readShort(in);
 			sizeZ = FileUtilities.readShort(in);
-			max = new Location(min.getWorld(), min.getX() + sizeX, min.getY() + sizeY, min.getZ() + sizeZ);
+			maxX = minX + sizeX;
+			maxY = minY + sizeY;
+			maxZ = minZ + sizeZ;
+
+			int keyLength;
+			byte[] bytes = new byte[255];
+			while ((keyLength = in.read()) != 0) {
+				String key = FileUtilities.readString(in, keyLength, bytes);
+				int valueLength = in.read();
+
+				switch (key) {
+				case "compression":
+					String compressionTypeName = FileUtilities.readString(in, valueLength, bytes);
+					// in = new InflaterInputStream(in); // Corrupts data- May be an issue with
+					// Java.
+					// in = new GZIPInputStream(in);
+					try {
+						CompressionType compression = CompressionType.valueOf(compressionTypeName);
+
+						switch (compression) {
+						case LZ4:
+							in = new LZ4BlockInputStream(in);
+						case NONE:
+							in = new BufferedInputStream(in);
+						}
+					} catch (IllegalArgumentException e) {
+						end(EndStatus.FAIL_UNKNOWN_COMPRESSION);
+					}
+					break;
+				case "minecraft_version":
+					String version = FileUtilities.readString(in, valueLength, bytes);
+					if (!version.equalsIgnoreCase(mcVersion)) {
+						Main.plugin.getLogger().warning("File was written in MC version " + version
+								+ ", but you are running " + mcVersion);
+					}
+					break;
+				default:
+					in.skip(valueLength); // Don't assume it's a string.
+					Main.plugin.getLogger().warning("File being read has an unknown key \"" + key
+							+ "\". Was it written with another program?");
+				}
+			}
 
 		} catch (IOException e1) {
 			e1.printStackTrace();
 			end(EndStatus.FAIL_IO_ERROR);
 			return false;
 		}
+
+		initChunkUnloading(maxZ);
+
 		return true;
 	}
 
 	/**
-	 * Ends the paste task if it is done or not. Sets everything back to the way it should be and
-	 * closes open resources.
+	 * Ends the paste task if it is done or not. Sets everything back to the way it
+	 * should be and closes open resources.
 	 */
 	public final void kill() {
-		end(EndStatus.FAIL_EXERNAL_TERMONATION);
+		end(EndStatus.FAIL_EXERNAL_TERMINATION);
 	}
 
 	protected final void end(EndStatus endStatus) {
-		min.getWorld().setAutoSave(originalWorldSaveSetting);
-		try {
-			if (pasteTask != null && pasteTask.in != null)
-				pasteTask.in.close();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-		Bukkit.getScheduler().cancelTask(taskID);
-		taskID = -1;
-		runningPastes.remove(this);
+		world.setAutoSave(originalWorldSaveSetting);
+
+		inProgress = false;
 		TaskManager.removeTask();
 
+		runningPastes.remove(this);
+		// Closes the resource to close resources.
+		if (in != null) {
+			try {
+				in.close();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+		if (task != null && !task.isCancelled()) {
+			task.cancel();
+			task = null;
+		}
 		if (endStatus.equals(EndStatus.SUCCESS) && pastes != null && pastes.size() > 1) {
 			// This is for the legacy distributed pastes.
-			// Checks to see if there is another paste task to run. Removes from the ArrayList
-			// because it's scheduling it.
+			// Checks to see if there is another paste task to run.
+			// Removes from the ArrayList because it's scheduling it.
 			pastes.remove(0);
 
 			Paste nextPaste = pastes.get(0);
-			nextPaste.startPasteTime = this.startPasteTime;
+			nextPaste.startTime = this.startTime;
 			nextPaste.blocksChanged = blocksChanged;
 			// Schedules it.
-			Bukkit.getScheduler().runTaskLater(Main.plugin, nextPaste, 1);
+			Bukkit.getScheduler().runTaskLater(Main.plugin, this, 1);
 		} else {
-			new PasteEndEvent(this, System.nanoTime() - startPasteTime, blocksChanged, endStatus);
+			sender.sendMessage("Time spent on subtask: " + totalTime);
+			new PasteEndEvent(this, System.nanoTime() - startTime, blocksChanged, endStatus);
 		}
 	}
-}
 
-/**
- * PasteTask class, used by the Paste task as a runnable to make pastes progressive.
- * 
- * @author lizardfreak321
- */
-class PasteTask extends RollbackOperation {
-	final private Location tempLoc;		// Stores the location that is currently being worked on.
-	private int id;						// The ID of the block being worked on.
-	private int data;					// The data of the block being worked on.
-	private int compressCount = 0;		// Used in the compression algorithm.
-	private String[] lines = null;		// Used when getting the lines of a sign from file.
-	private long index = 0;				// The index of the block.
-	private long tick = 0;				// The current tick.
-	protected final BufferedInputStream in;	// The stream used to read from the file.
-	protected final CommandSender sender;		// The sender that all messages are sent to.
-	private String prefix;				// The prefix all messages will have.
-	private final Paste paste;				// The PasteTask object.
-	private final int[] simpleBlocks; 	// Stores what blocks do not need the data saved
-	private final boolean ignoreAir;
+	// ---------- Task ----------
 
-	public PasteTask(Location min, Location max, BufferedInputStream in, Paste paste, int[] simpleBlocks,
-			boolean ignoreAir, CommandSender sender, String prefix) {
-		this.min = min;
-		this.tempLoc = min.clone();
-		this.max = max;
-		this.lastChunkX = min.getChunk().getX();
-		this.in = in;
-		this.sender = sender;
-		this.prefix = prefix;
-		this.paste = paste;
-		this.simpleBlocks = simpleBlocks;
-		this.ignoreAir = ignoreAir;
-	}
+	private final void pasteTask() {
+		long startTime = System.currentTimeMillis(); // Used to keep track of time.
+		tick++; // Increments the tick variable.
 
-	@Override
-	public final void run() {
-		long startTime = System.nanoTime(); // Keeps track of the start time.
-		boolean skip = false;
+		boolean skip = false; // To know when to quit the loop for that tick.
 
-		// Increments the tick variable to keep track of how many ticks this operation has been
-		// running.
-		tick++;
-
-		// Loops until done or skipped. Done is defined as when the x value goes too far.
-		while (tempLoc.getBlockX() <= max.getBlockX() && !skip) {
-
-			try {
-				if (!getIDsFromFile())
-					return;
-				checkAndUpdateBlocks();
-				index++;
-
-				// Subtracts from compressCount because it
-				// finished with a block.
-				compressCount--;
-			} catch (IOException e) {
-				e.printStackTrace();
-				paste.end(EndStatus.FAIL_IO_ERROR);
-
+		while (!skip && inProgress) {
+			for (int i = 0; inProgress && i < 500; i++) {
+				nextBlock();
+				if (tempX > maxX) {
+					end(EndStatus.SUCCESS);
+				}
 			}
-
-			updateXYZ();
-
 			// Checks if it has run out of time.
-			if (System.nanoTime() - startTime > TaskManager.getMaxTime() * 1000000) {
+			if (System.currentTimeMillis() - startTime > TaskManager.getMaxTime()) {
 				skip = true;
-			} else {
-				skip = false;
 			}
 		}
 
-		// Displays the status update to the user if needed.
 		statusMessage();
-
-		// Checks if it is done, ends it if it is.
-		if (tempLoc.getBlockX() > max.getBlockX())
-			paste.end(EndStatus.SUCCESS);
-
 	}
 
-	private final void updateXYZ() {
-		// Updates X, Y, and Z variables.
-		tempLoc.setZ(tempLoc.getBlockZ() + 1);
+	int id = -1;
+	private BlockData lastData = null;
+	private int count = 0;
+	private final byte[] bytes = new byte[1000];
 
-		// Checks if the Z value has gone too far.
-		if (tempLoc.getBlockZ() > max.getBlockZ()) {
-			tempLoc.setZ(min.getBlockZ());
-			tempLoc.setY(tempLoc.getBlockY() + 1);
-		}
-		// Checks if the Y value has gone too car.
-		if (tempLoc.getBlockY() > max.getBlockY()) {
-			tempLoc.setY(min.getBlockY());
-			tempLoc.setX(tempLoc.getBlockX() + 1);
-			// Unloads the finished chunks to save resources.
-			checkChunks(tempLoc);
-		}
-	}
-
-	private boolean getIDsFromFile() throws IOException {
-		// less than or equal to 0 means it needs to
-		// check for the next set of blocks.
-		if (compressCount <= 0) {
-			// Gets the ID of the block.
-			id = in.read();
-
-			// For compression, it checks if this
-			// block doesn't need data saved.
-			if (isSimple(id, simpleBlocks)) {
-				data = 0;
-			} else {
-				data = in.read();
-			}
-
-			// In some cases it reaches the end of
-			// the file early. That normally happens
-			// when there was a copy error or the
-			// file got corrupted.
-			if (id == -1) {
-				paste.end(EndStatus.FILE_END_EARLY);
-				return false;
-			}
-
-			// For compression, it reads how many
-			// times this block is repeated.
-			compressCount = in.read();
-
-			// The following code is to read sign
-			// text.
-			if (compressCount == 0) {
-				lines = getLines();
-			} else {
-				lines = null;
-			}
-		}
-		return true;
-	}
-
-	@SuppressWarnings("deprecation")
-	private final void checkAndUpdateBlocks() {
-		// Gets the block from the temporary location.
-		Block block = tempLoc.getBlock();
-
-		// Checks if the blocks are the same to save resources. It is much more efficient to only
-		// change blocks that are different.
-		if ((id != 0 || !ignoreAir) && (id != block.getType().getId() || data != block.getData())) {
-			// If they are, schedule a new
-			// BlockClass
-			block.setType(Material.getMaterial(LegacyUpdater.legacyMaterialNames[id], true));
-			block.setData((byte) data);
-
-			paste.blocksChanged++;
+	private final void nextBlock() {
+		if (tempY == minY) { // For efficiency.
+			nextLocation(tempX, tempZ);
 		}
 
-		// If it's a sign, set the text to what it was in the database (The array named "text")
-		if (lines != null && (id == signPostID || id == wallSignID)) {
-			if (!Arrays.equals(((Sign) block.getState()).getLines(), lines)) {
-
-				Sign sign = (Sign) block.getState();
-				for (int i = 0; i < 4; i++) {
-					sign.setLine(i, lines[i]);
+		if (count < 1) {
+			try {
+				id = in.read();
+				if (id == -1) {
+					end(EndStatus.FILE_END_EARLY);
+					return;
 				}
-
-				// Update the sign
-				sign.update();
-			}
-		}
-	}
-
-	// Used in the reading of the stored files.
-	private final String[] getLines() throws IOException {
-		// Signs have 4 lines.
-		String lines[] = new String[4];
-		String line;
-		char tempChar;
-
-		// Reads the lines.
-		for (int lineNumber = 0; lineNumber < 4; lineNumber++) {
-			boolean notDone = true;
-			line = "";
-			while (notDone) {
-				tempChar = (char) in.read();
-				if (tempChar != 0) {
-					line = line + tempChar;
+				if (id == 0) {
+					// New block
+					String blockDataString = FileUtilities.readShortString(in, bytes);
+					lastData = Bukkit.createBlockData(blockDataString);
+					id = in.read();
+					dataCache.put(id, lastData);
 				} else {
-					notDone = false;
+					lastData = dataCache.get(id);
 				}
+				count = in.read();
+				if (count == 0) {
+					count = FileUtilities.readShort(in);
+				}
+			} catch (IOException e) {
+				end(EndStatus.FAIL_IO_ERROR);
+				e.printStackTrace();
 			}
-			lines[lineNumber] = line;
 		}
-		return lines;
+		count--;
+
+		if (!ignoreAir || (!lastData.equals(air) && !lastData.equals(caveAir))) {
+			Block currentBlock = world.getBlockAt(tempX, tempY, tempZ);
+			if (!currentBlock.getBlockData().equals(lastData)) {
+				currentBlock.setBlockData(lastData, false);
+				blocksChanged++;
+			}
+		}
+
+		updateVariables();
+	}
+
+	private final void updateVariables() {
+		// Updates variables.
+		blockIndex++;
+		// Move Z
+		tempZ++;
+
+		// Wrap Z
+		if (tempZ > maxZ) {
+			tempZ = minZ;
+			// Move Y
+			tempY++;
+
+			// Wrap Y
+			if (tempY > maxY) {
+				tempY = minY;
+
+				// Move X - does not need wrapping
+				tempX += 1;
+			}
+		}
 	}
 
 	// Used to send status messages to the "sender" if the sender is not null.
 	private final void statusMessage() {
 		if (sender != null && tick % 100 == 0) {
-			long maxBlocks = (max.getBlockX() - min.getBlockX());
-			maxBlocks *= (max.getBlockY() - min.getBlockY());
-			maxBlocks *= (max.getBlockZ() - min.getBlockZ());
-			double percent = (index / (double) maxBlocks) * 100;
-			sender.sendMessage(prefix + "Working on paste operation; " + new DecimalFormat("#.0").format(percent)
-					+ "% done (" + index + "/" + maxBlocks + ")");
+			long currentTime = System.nanoTime();
+
+			long maxBlocks = (maxX - minX);
+			maxBlocks *= (maxY - minY);
+			maxBlocks *= (maxZ - minZ);
+			double percent = (blockIndex / (double) maxBlocks) * 100;
+			sender.sendMessage(prefix + "Working on paste operation; "
+					+ new DecimalFormat("#.0").format(percent) + "% done (" + blockIndex + "/"
+					+ maxBlocks + ", "
+					+ ((1000000000 * (blockIndex - lastIndex)) / (currentTime - lastTime))
+					+ " blocks/second)");
+			lastIndex = blockIndex;
+			lastTime = currentTime;
 		}
 	}
 

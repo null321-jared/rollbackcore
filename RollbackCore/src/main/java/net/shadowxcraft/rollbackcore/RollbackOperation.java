@@ -19,10 +19,10 @@
 
 package net.shadowxcraft.rollbackcore;
 
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.command.CommandSender;
-import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitTask;
 
 /**
@@ -32,7 +32,9 @@ import org.bukkit.scheduler.BukkitTask;
  * @author lizardfreak321
  * @since 2.0
  */
-abstract class RollbackOperation extends BukkitRunnable {
+abstract class RollbackOperation implements Runnable {
+	protected static String mcVersion;
+	
 	protected World world;
 	protected int minX, minY, minZ;
 	protected int tempX, tempY, tempZ;
@@ -45,12 +47,17 @@ abstract class RollbackOperation extends BukkitRunnable {
 													// chunks.
 	private int zChunks;
 	private boolean[] loadedChunks;
+	private boolean writing;
 	
-	protected RollbackOperation(Location min) {
+	protected RollbackOperation(Location min, boolean writing) {
 		this.world = min.getWorld();
 		this.minX = min.getBlockX();
 		this.minY = min.getBlockY();
 		this.minZ = min.getBlockZ();
+		this.tempX = minX;
+		this.tempY = minY;
+		this.tempZ = minZ;
+		this.writing = writing;
 	}
 
 	protected void initChunkUnloading(int maxZ) {
@@ -96,7 +103,7 @@ abstract class RollbackOperation extends BukkitRunnable {
 					
 					// We can't use 'request' because in large tests, they
 					// weren't actually unloaded, leading towards a crash.
-					world.unloadChunk(this.lastChunkX, this.minChunkZ + i, false);
+					world.unloadChunk(this.lastChunkX, this.minChunkZ + i, writing);
 				}
 			}
 		}
@@ -106,5 +113,10 @@ abstract class RollbackOperation extends BukkitRunnable {
 			this.lastChunkX = locChunkX;
 			this.lastChunkZ = locChunkZ;
 		}
+	}
+	
+	static {
+		String bukkitVersion = Bukkit.getVersion();
+		mcVersion = bukkitVersion.substring(bukkitVersion.lastIndexOf(' ') + 1, bukkitVersion.indexOf(')'));
 	}
 }

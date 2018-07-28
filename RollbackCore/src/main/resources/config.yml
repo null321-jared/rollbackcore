@@ -4,7 +4,14 @@ Config:
     # and continues next tick. Each tick is 50 miliseconds, so it should be below that.
     # The default time is 25ms since that is half of a tick. If your server lags,
     # try lowering this value.
+    # If the server's TPS are fine, raise this number if you want it to work quicker.
     targettime: 25
+    # Compression. Compression can slow it down, but it also lowers the amount of
+    # storage that is required.
+    # Defaults to "LZ4". It offers about a 40% reduction with minimal overhead.
+    # GZip is currently unavailable (and is slower)
+    # The other option is "none"
+    compression: "LZ4"
   arenas:
     examplearena:
       x: 1

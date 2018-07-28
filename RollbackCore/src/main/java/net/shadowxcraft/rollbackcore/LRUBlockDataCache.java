@@ -25,7 +25,7 @@ public class LRUBlockDataCache {
 	Node end = null;
 
 	/**
-	 * Creates a new cache that will link the strings
+	 * Creates a new cache that will link the data
 	 * to integer values between and including min and max
 	 * 
 	 * @param minValue The min value. Min 0.
@@ -36,7 +36,7 @@ public class LRUBlockDataCache {
 			throw new IllegalArgumentException("minValue must be at least 0.");
 		}
         for(int i = minValue; i <= maxValue; i++) {
-        	unusedValues.addFirst(i);
+        	unusedValues.add(i);
         }
     }
 

@@ -28,6 +28,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.util.Arrays;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -38,6 +39,10 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 import com.google.common.io.ByteStreams;
 
+enum CompressionType {
+	NONE, LZ4;
+}
+
 /**
  * @author lizardfreak321
  */
@@ -47,6 +52,9 @@ public class Config {
 	// Used to store the amount of time all running tasks added up should target
 	// in one tick.
 	public static int targetTime = 25;
+
+	// Used to store which compression algorithm (if any) is being used for copies.
+	public static CompressionType compressionType = CompressionType.LZ4;
 
 	private Config() {
 	}
@@ -63,6 +71,8 @@ public class Config {
 		checkConfig();
 		// Loads the target time.
 		Config.targetTime = getTargetTime();
+		// Loads the compression type.
+		Config.compressionType = getCompression();
 		// Alerts user though console.
 		plugin.getLogger().info("Configs loaded!");
 	}
@@ -93,20 +103,31 @@ public class Config {
 	private static final void checkConfig() {
 		File file = new File(plugin.getDataFolder() + "/config.yml");
 		YamlConfiguration yaml = YamlConfiguration.loadConfiguration(file);
+		boolean changed = false;
 
-		if (yaml.contains("Config.rollback.rate"))
+		if (yaml.contains("Config.rollback.rate")) {
 			yaml.set("Config.rollback.rate", null);
+			changed = true;
+		}
 
 		if (!yaml.contains("Config.rollback.targettime")) {
 			yaml.set("Config.rollback.targettime", 25);
+			changed = true;
+		}
+
+		if (!yaml.contains("Config.rollback.compression")) {
+			yaml.set("Config.rollback.compression", "LZ4");
+			changed = true;
 		}
 
 		if (!yaml.contains("configversion")) {
 			yaml.set("configversion", 1.0);
+			changed = true;
 		}
 
 		boolean moved = yaml.getBoolean("movedfiles", false);
 		if (!moved) {
+			changed = true;
 			Path oldArenasFolder = Paths.get("arenas");
 			try {
 				if (Files.exists(oldArenasFolder)) {
@@ -121,13 +142,14 @@ public class Config {
 			}
 		}
 
-		try {
-			yaml.save(file);
-		} catch (IOException e) {
-			Main.plugin.getLogger()
-					.info("Unable to save config! This may cause an issue if there is an incompatible config value.");
-			e.printStackTrace();
-		}
+		if (changed)
+			try {
+				yaml.save(file);
+			} catch (IOException e) {
+				Main.plugin.getLogger().info(
+						"Unable to save config! This may cause an issue if there is an incompatible config value.");
+				e.printStackTrace();
+			}
 	}
 
 	// Gets Block Rate from the config.
@@ -148,6 +170,34 @@ public class Config {
 		}
 
 		return finalizedTargetTime;
+	}
+
+	// Gets Block Rate from the config.
+	private static final CompressionType getCompression() {
+		File file = new File(plugin.getDataFolder() + "/config.yml");
+		YamlConfiguration yaml = YamlConfiguration.loadConfiguration(file);
+
+		// Validates input.
+		String algoritmName = yaml.getString("Config.rollback.compression", null);
+		CompressionType compression;
+		if (algoritmName == null) {
+			compression = CompressionType.LZ4;
+			plugin.getLogger().warning("No compression algoritm specified. Using LZ4");
+		} else if (algoritmName.isEmpty()) {
+			compression = CompressionType.NONE;
+			plugin.getLogger().info("Using no compression.");
+		} else {
+			try {
+				compression = CompressionType.valueOf(algoritmName.toUpperCase());
+				plugin.getLogger().info("Using compression \"" + compression.toString() + "\"");
+			} catch (IllegalArgumentException e) {
+				plugin.getLogger().warning("Compression algoritm not found. Using LZ4. Options: "
+						+ Arrays.toString(CompressionType.values()));
+				compression = CompressionType.LZ4;
+			}
+		}
+
+		return compression;
 	}
 
 	// WARNING: Case sensitive!
