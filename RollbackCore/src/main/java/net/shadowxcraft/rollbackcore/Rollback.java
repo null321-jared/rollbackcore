@@ -56,22 +56,22 @@ public class Rollback {
 	/**
 	 * Used to allow players to copy without specifying coordinates using worldedit.
 	 * 
-	 * @param player
-	 *            The player who is copying
-	 * @param name
-	 *            The name and directory of the folder that will contain the saved data.
-	 *            Recommended: Make a sub-folder in your Main.plugin and put them in there.
-	 * @param addToConf
-	 *            Used to specify if the copy should be added to the config (A world-copy). If true,
-	 *            the name parameter gets overwritten.
+	 * @param player    The player who is copying
+	 * @param name      The name and directory of the folder that will contain the
+	 *                  saved data. Recommended: Make a sub-folder in your
+	 *                  Main.plugin and put them in there.
+	 * @param addToConf Used to specify if the copy should be added to the config (A
+	 *                  world-copy). If true, the name parameter gets overwritten.
 	 * @see Copy
 	 */
 	public static final void copy(Player player, String name, boolean addToConf) {
 		// Uses worldedit to get the player's region.
 		WorldEditPlugin worldEditPlugin = null;
-		worldEditPlugin = (WorldEditPlugin) Bukkit.getServer().getPluginManager().getPlugin("WorldEdit");
+		worldEditPlugin = (WorldEditPlugin) Bukkit.getServer().getPluginManager()
+				.getPlugin("WorldEdit");
 		if (worldEditPlugin == null) {
-			player.sendMessage(Main.prefix + "Error with region command! Error: WorldEdit is null.");
+			player.sendMessage(
+					Main.prefix + "Error with region command! Error: WorldEdit is null.");
 			return;
 		}
 
@@ -84,11 +84,12 @@ public class Rollback {
 
 			// Used to add an arena to the config for integration with SG.
 			if (addToConf) {
-				if (!Config.setArenaLocation(name, min.getBlockX(), min.getBlockY(), min.getBlockZ(),
-						player.getWorld())) {
+				if (!Config.setArenaLocation(name, min.getBlockX(), min.getBlockY(),
+						min.getBlockZ(), player.getWorld())) {
 					// If this code gets executed, it was unable to save the
 					// YAML.
-					player.sendMessage(Main.prefix + ChatColor.DARK_RED + "Unable to add arena to config! Aborting.");
+					player.sendMessage(Main.prefix + ChatColor.DARK_RED
+							+ "Unable to add arena to config! Aborting.");
 					return;
 				}
 				name = Paths.get(Main.regionsPath.toString(), name + ".dat").toString();
@@ -98,12 +99,12 @@ public class Rollback {
 			// copyDistributed(min.getBlockX(), min.getBlockY(),
 			// min.getBlockZ(), max.getBlockX(), max.getBlockY(),
 			// max.getBlockZ(), player.getWorld(), name, player);
-			new Copy(min.getBlockX(), min.getBlockY(), min.getBlockZ(), max.getBlockX(), max.getBlockY(),
-					max.getBlockZ(), player.getWorld(), name, player).run();
+			new Copy(min.getBlockX(), min.getBlockY(), min.getBlockZ(), max.getBlockX(),
+					max.getBlockY(), max.getBlockZ(), player.getWorld(), name, player).run();
 
 			// Notify the player it's starting at those coordinates.
-			player.sendMessage(
-					Main.prefix + "Starting! " + min.getBlockX() + " " + min.getBlockY() + " " + min.getBlockZ());
+			player.sendMessage(Main.prefix + "Starting! " + min.getBlockX() + " " + min.getBlockY()
+					+ " " + min.getBlockZ());
 		} else {
 			// This means there was no selection, so it skips copying and tells
 			// the player.
@@ -112,36 +113,29 @@ public class Rollback {
 	}
 
 	/**
-	 * Used to copy the region specified in the parameters in a distributed way. Not recommended any
-	 * more because the new paste function progressively rolls back arenas.
+	 * Used to copy the region specified in the parameters in a distributed way. Not
+	 * recommended any more because the new paste function progressively rolls back
+	 * arenas.
 	 * 
-	 * @param minX
-	 *            The X value of the minimum location of the region.
-	 * @param minY
-	 *            The Y value of the minimum location of the region.
-	 * @param minZ
-	 *            The Z value of the minimum location of the region.
-	 * @param maxX
-	 *            The X value of the maximum location of the region.
-	 * @param maxY
-	 *            The X value of the maximum location of the region.
-	 * @param maxZ
-	 *            The Y value of the maximum location of the region.
-	 * @param world
-	 *            The world that the region is in.
-	 * @param name
-	 *            The name and directory of the folder that will contain the saved data.
-	 *            Recommended: Make a sub-folder in your Main.plugin and put them in there.
-	 * @param sender
-	 *            Where status messages will be sent. Null for no messages, consoleSender for
-	 *            console, and a player for a player.
+	 * @param minX   The X value of the minimum location of the region.
+	 * @param minY   The Y value of the minimum location of the region.
+	 * @param minZ   The Z value of the minimum location of the region.
+	 * @param maxX   The X value of the maximum location of the region.
+	 * @param maxY   The X value of the maximum location of the region.
+	 * @param maxZ   The Y value of the maximum location of the region.
+	 * @param world  The world that the region is in.
+	 * @param name   The name and directory of the folder that will contain the
+	 *               saved data. Recommended: Make a sub-folder in your Main.plugin
+	 *               and put them in there.
+	 * @param sender Where status messages will be sent. Null for no messages,
+	 *               consoleSender for console, and a player for a player.
 	 * @see Copy
 	 * 
-	 * @deprecated Ever since version 2.0, this method does not increase performance, instead it
-	 *             just makes it unnecceceraly complicated.
+	 * @deprecated Ever since version 2.0, this method does not increase
+	 *             performance, instead it just makes it unnecceceraly complicated.
 	 */
-	public static final void copyDistributed(int minX, int minY, int minZ, int maxX, int maxY, int maxZ, World world,
-			String name, CommandSender sender) {
+	public static final void copyDistributed(int minX, int minY, int minZ, int maxX, int maxY,
+			int maxZ, World world, String name, CommandSender sender) {
 		File file = null;
 		File index = null;
 		short files = 0;
@@ -162,8 +156,8 @@ public class Rollback {
 		} catch (IOException e) {
 			e.printStackTrace();
 			if (sender != null) {
-				sender.sendMessage(
-						Main.prefix + ChatColor.RED + "Aborted due to file IO exception. Check console for details.");
+				sender.sendMessage(Main.prefix + ChatColor.RED
+						+ "Aborted due to file IO exception. Check console for details.");
 			}
 
 			return;
@@ -220,8 +214,8 @@ public class Rollback {
 					}
 
 					// One copy per tick
-					Copy copy = new Copy(tempMinX, tempMinY, tempMinZ, tempMaxX, tempMaxY, tempMaxZ, world,
-							"./" + name + "/" + files, sender);
+					Copy copy = new Copy(tempMinX, tempMinY, tempMinZ, tempMaxX, tempMaxY, tempMaxZ,
+							world, "./" + name + "/" + files, sender);
 					Bukkit.getScheduler().runTaskLater(Main.plugin, copy, files);
 
 					// Writes to the index
@@ -267,35 +261,21 @@ public class Rollback {
 	/*-----------------------------------| Paste |------------------------------------*/
 
 	/**
-	 * Used to allow players to paste a saved copy where their worldedit region is. Normally used
-	 * for testing.
+	 * Used to allow players to paste a saved copy where their worldedit region is.
+	 * Normally used for testing.
 	 * 
-	 * @param player
-	 *            The player who will get status messages and who's region will be used.
-	 * @param name
-	 *            The file/folder directory that will get pasted.
+	 * @param player The player who will get status messages and who's region will
+	 *               be used.
+	 * @param name   The file/folder directory that will get pasted.
 	 */
 	public static final void paste(Player player, String name) {
-		// Uses worldedit to get the player's region.
-		WorldEditPlugin worldEditPlugin = null;
-		worldEditPlugin = (WorldEditPlugin) Bukkit.getServer().getPluginManager().getPlugin("WorldEdit");
-		if (worldEditPlugin == null) {
-			player.sendMessage(Main.prefix + "Error with region command! Error: WorldEdit is null.");
-		}
-
-		Selection sel = worldEditPlugin.getSelection(player);
-
-		// Checks if the player has a selection.
-		if (sel instanceof CuboidSelection) {
-
-			// Gets the min point because that is all that is needed for pastes.
-			Vector min = sel.getNativeMinimumPoint();
-
+		Vector min = getSelectionMin(player);
+		if (min != null) {
 			// Pastes it at those coordinates.
 			// Shows on console for debug and notification purposes.
 
-			Paste paste = new Paste(min.getBlockX(), min.getBlockY(), min.getBlockZ(), player.getWorld(), name, null,
-					player);
+			Paste paste = new Paste(min.getBlockX(), min.getBlockY(), min.getBlockZ(),
+					player.getWorld(), name, null, player);
 			Bukkit.getScheduler().runTaskLater(Main.plugin, paste, 1);
 
 		} else {
@@ -305,28 +285,45 @@ public class Rollback {
 
 	}
 
+	static final Vector getSelectionMin(Player player) {
+		// Uses worldedit to get the player's region.
+		WorldEditPlugin worldEditPlugin = null;
+		worldEditPlugin = (WorldEditPlugin) Bukkit.getServer().getPluginManager()
+				.getPlugin("WorldEdit");
+		if (worldEditPlugin == null) {
+			player.sendMessage(
+					Main.prefix + "Error with region command! Error: WorldEdit is null.");
+		}
+
+		Selection sel = worldEditPlugin.getSelection(player);
+
+		// Checks if the player has a selection.
+		if (sel instanceof CuboidSelection) {
+
+			// Gets the min point because that is all that is needed for pastes.
+			return sel.getNativeMinimumPoint();
+		} else {
+			return null;
+		}
+	}
+
 	/**
-	 * A non-recommended way to paste. It checks if you are trying to paste a simple file, or a
-	 * distributed paste, and uses the appropriate methods.
+	 * A non-recommended way to paste. It checks if you are trying to paste a simple
+	 * file, or a distributed paste, and uses the appropriate methods.
 	 * 
-	 * @param x
-	 *            Where the min-x of the paste will be pasted.
-	 * @param y
-	 *            Where the min-y of the paste will be pasted.
-	 * @param z
-	 *            Where the min-z of the paste will be pasted.
-	 * @param world
-	 *            What world the paste will be pasted in.
-	 * @param name
-	 *            The directory of the files.
-	 * @param sender
-	 *            The person who will get status messages. Use null for no messsages, and
-	 *            consoleSender for console.
-	 * @deprecated Ever since version 2.0, due to the performance improvements this method is no
-	 *             longer needed. Only use it for backwards compatibility if your plugin used
-	 *             distributed pastes.
+	 * @param x      Where the min-x of the paste will be pasted.
+	 * @param y      Where the min-y of the paste will be pasted.
+	 * @param z      Where the min-z of the paste will be pasted.
+	 * @param world  What world the paste will be pasted in.
+	 * @param name   The directory of the files.
+	 * @param sender The person who will get status messages. Use null for no
+	 *               messsages, and consoleSender for console.
+	 * @deprecated Ever since version 2.0, due to the performance improvements this
+	 *             method is no longer needed. Only use it for backwards
+	 *             compatibility if your plugin used distributed pastes.
 	 */
-	public static final void pasteDistributed(int x, int y, int z, World world, String name, CommandSender sender) {
+	public static final void pasteDistributed(int x, int y, int z, World world, String name,
+			CommandSender sender) {
 		// How far in each direction to paste the paste section. Divided by 80
 		int differenceX = 0;
 		int differenceY = 0;
@@ -367,8 +364,9 @@ public class Rollback {
 				differenceZ = FileUtilities.readShort(in);
 
 				// Adds the paste to the ArrayList so it can be pasted later.
-				pastes.add(new Paste(x + (differenceX * SIZE), y + (differenceY * SIZE), z + (differenceZ * SIZE),
-						world, name + "/" + file + ".dat", pastes, sender));
+				pastes.add(new Paste(x + (differenceX * SIZE), y + (differenceY * SIZE),
+						z + (differenceZ * SIZE), world, name + "/" + file + ".dat", pastes,
+						sender));
 
 			}
 

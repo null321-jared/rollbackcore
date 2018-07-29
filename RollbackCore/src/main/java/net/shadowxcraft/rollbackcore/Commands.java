@@ -34,6 +34,8 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.command.ConsoleCommandSender;
 import org.bukkit.entity.Player;
 
+import com.sk89q.worldedit.Vector;
+
 /**
  * @author lizardfreak321
  */
@@ -62,7 +64,8 @@ public class Commands implements CommandExecutor {
 
 					if (args[0].equalsIgnoreCase("reload")) {
 						reloadCommand(sender);
-					} else if (args[0].equalsIgnoreCase("addarena") || args[0].equalsIgnoreCase("addregion")) {
+					} else if (args[0].equalsIgnoreCase("addarena")
+							|| args[0].equalsIgnoreCase("addregion")) {
 						addArenaCommand(sender, args);
 					} else if (args[0].equalsIgnoreCase("watchdog")) {
 						watchDogCommand(sender, args);
@@ -70,13 +73,16 @@ public class Commands implements CommandExecutor {
 						copyCommand(sender, args);
 					} else if (args[0].equalsIgnoreCase("paste")) {
 						pasteCommand(sender, args);
-					} else if (args[0].equalsIgnoreCase("arena") || args[0].equalsIgnoreCase("rollbackregion")
+					} else if (args[0].equalsIgnoreCase("arena")
+							|| args[0].equalsIgnoreCase("rollbackregion")
 							|| args[0].equalsIgnoreCase("region")) {
 						arenaRollackCommand(sender, args);
 					} else if (args[0].equalsIgnoreCase("help")) {
 						helpCommand(sender);
-					} else if (args[0].equalsIgnoreCase("cancel") || args[0].equalsIgnoreCase("cancelall")) {
-						sender.sendMessage(prefix + "Canceled " + TaskManager.cancelAllTasks() + " tasks.");
+					} else if (args[0].equalsIgnoreCase("cancel")
+							|| args[0].equalsIgnoreCase("cancelall")) {
+						sender.sendMessage(
+								prefix + "Canceled " + TaskManager.cancelAllTasks() + " tasks.");
 					} else if (args[0].equalsIgnoreCase("chunkLoaded")) {
 						chunkCommand(sender, args);
 					} else {
@@ -122,51 +128,83 @@ public class Commands implements CommandExecutor {
 			sender.sendMessage(prefix + "Importing...");
 			WatchDogRegion.importWatchDog(args[2], sender, Main.prefix);
 		} else {
-			sender.sendMessage(prefix + "Usage: /rollback watchdog <rollback|create|import|export>");
+			sender.sendMessage(
+					prefix + "Usage: /rollback watchdog <rollback|create|import|export>");
 		}
 	}
 
 	private final void pasteCommand(CommandSender sender, String args[]) {
-		if (args.length == 2) {
-			// For the command /rollback paste <fileName>
-			if (sender instanceof Player)
-				Rollback.paste((Player) sender, args[1]);
-			else
-				sender.sendMessage(prefix + "Only players can use this command!");
-		} else if (args.length >= 6 && args.length <= 8) {
-			// For the command:
-			// "/rollback paste <x> <y> <z> <world> <file> -clearEntites -ignoreAir"
-			// Requires no worldedit.
-			Location min;
-			Set<String> otherArgs = new HashSet<String>();
-			for (int i = 2; i < args.length; i++) {
-				otherArgs.add(args[i].toLowerCase());
+		Set<String> otherArgs = new HashSet<String>();
+		int lastValidArg = 0;
+		for (int i = args.length - 1; i > 0; i--) {
+			if (args[i].startsWith("-")) {
+				otherArgs.add(args[i]);
+			} else {
+				lastValidArg = i;
+				break;
+			}
+		}
+		boolean ignoreAir = otherArgs.remove("-ignoreair");
+		boolean clearEntities = otherArgs.remove("-clearentities");
+		if (!otherArgs.isEmpty()) {
+			sender.sendMessage(prefix + "Unknown args: " + otherArgs.toString() + ". Continuing.");
+		}
+
+		String fileName = args[lastValidArg];
+		Location min;
+		if (lastValidArg == 1 || lastValidArg == 4 || lastValidArg == 5) {
+			// Only filename specified if 1. everything but world specified if 4.
+			// all location details specified if 5.
+			World world;
+			if (lastValidArg == 4 || lastValidArg == 1) {
+				if (sender instanceof Player) {
+					world = ((Player) sender).getWorld();
+				} else {
+					sender.sendMessage(prefix
+							+ "Non-player command executors must specify all location details!");
+					return;
+				}
+			} else {
+				world = Bukkit.getWorld(args[4]);
+				if (world == null) {
+					sender.sendMessage(prefix + "Unknown world \"" + args[4] + "\". Worlds: "
+							+ Bukkit.getWorlds());
+					return;
+				}
 			}
 
-			try {
-				World world = plugin.getServer().getWorld(args[4]);
-				if (world == null) {
-					sender.sendMessage(prefix + "Unknown world!");
-				} else {
+			if (lastValidArg == 4 || lastValidArg == 5) {
+				try {
 					min = new Location(world, Integer.parseInt(args[1]), Integer.parseInt(args[2]),
 							Integer.parseInt(args[3]));
-					new Paste(min, args[5], sender, otherArgs.remove("-clearentities"), otherArgs.remove("-ignoreair"),
-							prefix).run();
-					if (otherArgs.size() > 0)
-						sender.sendMessage(
-								Main.prefix + "Unknown args " + otherArgs.toString() + ". Continuing with operation.");
+				} catch (NumberFormatException e) {
+					sender.sendMessage(prefix + ChatColor.RED
+							+ " You must specify an integer for the coordinates!");
+					sender.sendMessage(prefix
+							+ "Usage: /rollback paste [<x> <y> <z> [<world>]] <file> [-clearEntities -ignoreAir]");
+					return;
 				}
-			} catch (NumberFormatException e) {
-				sender.sendMessage(prefix + ChatColor.RED + " You must specify an integer for the time!");
-				sender.sendMessage(
-						prefix + "Usage: /rollback paste [<x> <y> <z> <world>] <file> [-clearEntities -ignoreAir]");
+			} else { // lastValidArg == 1
+				if (sender instanceof Player) {
+					Vector minVector = Rollback.getSelectionMin((Player) sender);
+					min = new Location(((Player) sender).getWorld(), minVector.getX(),
+							minVector.getY(), minVector.getZ());
+				} else {
+					sender.sendMessage(prefix
+							+ "Non-player command executors must specify all location details!");
+					return;
+				}
 			}
 		} else {
-			sender.sendMessage(
-					prefix + "Usage: /rollback paste [<x> <y> <z> <world>] <file> [-clearEntities -ignoreAir]");
+			sender.sendMessage(prefix
+					+ "Unknown amount of args. Usage: Usage: /rollback paste [<x> <y> <z> [<world>]] <file> [-clearEntities -ignoreAir]");
+			return;
 		}
+
+		sender.sendMessage(prefix + "Starting paste operation!");
+		new Paste(min, fileName, sender, clearEntities, ignoreAir, prefix).run();
 	}
-	
+
 	private final void copyCommand(CommandSender sender, String args[]) {
 		if (args.length == 2) {
 			// For /rollback copy <file>
@@ -185,9 +223,8 @@ public class Commands implements CommandExecutor {
 			// For /rollback chunkloaded <world> <x> <z>
 			World world = Bukkit.getServer().getWorld(args[1]);
 			try {
-				sender.sendMessage(prefix + "Chunk is loaded: " +
-						world.isChunkLoaded(Integer.parseInt(args[2]),
-								Integer.parseInt(args[3])));
+				sender.sendMessage(prefix + "Chunk is loaded: " + world
+						.isChunkLoaded(Integer.parseInt(args[2]), Integer.parseInt(args[3])));
 			} catch (NumberFormatException e) {
 				sender.sendMessage(prefix + "Failed to parse arguements.");
 			}
@@ -215,19 +252,20 @@ public class Commands implements CommandExecutor {
 				// Checks if it is a single file, if not, it uses the distributed
 				// system.
 				if (dat.exists()) {
-					Paste paste = new Paste(temp, name + ".dat", sender, otherArgs.remove("-clearentities"),
-							otherArgs.remove("-ignoreair"), Main.prefix);
+					Paste paste = new Paste(temp, name + ".dat", sender,
+							otherArgs.remove("-clearentities"), otherArgs.remove("-ignoreair"),
+							Main.prefix);
 					Bukkit.getScheduler().runTaskLater(Main.plugin, paste, 1);
 					if (otherArgs.size() > 0)
-						sender.sendMessage(
-								Main.prefix + "Unknown args " + otherArgs.toString() + ". Continuing with operation.");
+						sender.sendMessage(Main.prefix + "Unknown args " + otherArgs.toString()
+								+ ". Continuing with operation.");
 				} else if (dir.isDirectory()) {
 					if (otherArgs.size() > 0) {
 						sender.sendMessage(Main.prefix
 								+ "Args will be ignored due to old save format. Re-save the region to use them.");
 					}
-					Rollback.pasteDistributed(temp.getBlockX(), temp.getBlockY(), temp.getBlockZ(), temp.getWorld(),
-							name, sender);
+					Rollback.pasteDistributed(temp.getBlockX(), temp.getBlockY(), temp.getBlockZ(),
+							temp.getWorld(), name, sender);
 				} else if (sender != null) {
 					sender.sendMessage(Main.prefix + "Not a file!");
 				}
@@ -237,17 +275,20 @@ public class Commands implements CommandExecutor {
 						+ "Could not find world! Please re-create the arena save or edit the config to contain a valid world.");
 			}
 		} else {
-			sender.sendMessage(prefix + "Usage: /rollback rollbackregion <arenaname> [-clearEntities -ignoreAir]");
+			sender.sendMessage(prefix
+					+ "Usage: /rollback rollbackregion <arenaname> [-clearEntities -ignoreAir]");
 		}
 	}
 
 	private final void helpCommand(CommandSender sender) {
-		sender.sendMessage(ChatColor.GRAY + "----------------------- " + ChatColor.GREEN + "[" + ChatColor.DARK_GREEN
-				+ "Help" + ChatColor.GREEN + "]" + ChatColor.GRAY + " -----------------------");
+		sender.sendMessage(ChatColor.GRAY + "----------------------- " + ChatColor.GREEN + "["
+				+ ChatColor.DARK_GREEN + "Help" + ChatColor.GREEN + "]" + ChatColor.GRAY
+				+ " -----------------------");
 		sender.sendMessage(ChatColor.GRAY + "/rollback reload | Reloads the plugin's config.");
 		sender.sendMessage(ChatColor.GRAY + "/rollback copy | The copy commands.");
 		sender.sendMessage(ChatColor.GRAY + "/rollback paste | The paste commands.");
-		sender.sendMessage(ChatColor.GRAY + "/rollback watchdog <create|rollback> | The watchdog region commands.");
+		sender.sendMessage(ChatColor.GRAY
+				+ "/rollback watchdog <create|rollback> | The watchdog region commands.");
 		sender.sendMessage(ChatColor.GRAY
 				+ "/rollback <rollbackregion|addregion> <name> | Used for integration with minigame plugins.");
 		sender.sendMessage(ChatColor.GRAY + "----------------------------------------------------");
