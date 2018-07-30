@@ -192,8 +192,12 @@ public class Copy extends RollbackOperation {
 		if (!initializeStream())
 			return false;
 
-		if (!startFile())
-			return false;
+		try {
+			startFile(out, maxX - minX, maxY - minY, maxZ - minZ);
+		} catch (IllegalArgumentException | IOException e) {
+			end(EndStatus.FAIL_IO_ERROR);
+			e.printStackTrace();
+		}
 
 		runningCopies.add(this);
 		TaskManager.addTask();
@@ -233,51 +237,45 @@ public class Copy extends RollbackOperation {
 	}
 
 	// Writes the initial data- Version, blocks, and size.
-	private final boolean startFile() {
+	static final void startFile(OutputStream out, int diffX, int diffY, int diffZ) throws IllegalArgumentException, IOException {
 		// Writes the version so that the plugin can convert/reject incompatible
 		// versions.
-		try {
-			out.write(VERSION);
-			// Writes the min-max differences to the file using writeShort
-			// because it can be larger than 255.
-			FileUtilities.writeShort(out, maxX - minX);
-			FileUtilities.writeShort(out, maxY - minY);
-			FileUtilities.writeShort(out, maxZ - minZ);
+		out.write(VERSION);
+		// Writes the min-max differences to the file using writeShort
+		// because it can be larger than 255.
+		FileUtilities.writeShort(out, diffX);
+		FileUtilities.writeShort(out, diffY);
+		FileUtilities.writeShort(out, diffZ);
 
-			// After here, put as many non-empty strings as wanted, followed by a 0/null.
-			// They should all be key, followed by value.
+		// After here, put as many non-empty strings as wanted, followed by a 0/null.
+		// They should all be key, followed by value.
 
-			// Key
-			FileUtilities.writeShortString(out, "minecraft_version");
-			// Value
-			FileUtilities.writeShortString(out, mcVersion);
+		// Key
+		FileUtilities.writeShortString(out, "minecraft_version");
+		// Value
+		FileUtilities.writeShortString(out, mcVersion);
 
-			// Key
-			FileUtilities.writeShortString(out, "compression");
-			// Value
-			FileUtilities.writeShortString(out, Config.compressionType.name());
+		// Key
+		FileUtilities.writeShortString(out, "compression");
+		// Value
+		FileUtilities.writeShortString(out, Config.compressionType.name());
 
-			switch (Config.compressionType) {
-			default:
-			case LZ4:
-				out = new LZ4BlockOutputStream(out, 1 << 16,
-						LZ4Factory.fastestInstance().highCompressor());
-				break;
-			case NONE:
-				out = new BufferedOutputStream(out);
-				break;
-			// out = new DeflaterOutputStream(out); // Corrupts the data- Appears to be a
-			// java issue.
-			// out = new GZIPOutputStream(out);
-			}
-
-			out.write(0); // 0 - nothing left in the header. Start the actual data.
-		} catch (IOException e1) {
-			e1.printStackTrace();
-			end(EndStatus.FAIL_IO_ERROR);
-			return false;
+		switch (Config.compressionType) {
+		default:
+		case LZ4:
+			out = new LZ4BlockOutputStream(out, 1 << 16,
+					LZ4Factory.fastestInstance().highCompressor());
+			break;
+		case NONE:
+			out = new BufferedOutputStream(out);
+			break;
+		// out = new DeflaterOutputStream(out); // Corrupts the data- Appears to be a
+		// java issue.
+		// out = new GZIPOutputStream(out);
 		}
-		return true;
+
+		out.write(0); // 0 - nothing left in the header. Start the actual data.
+
 	}
 
 	/**
@@ -345,9 +343,9 @@ public class Copy extends RollbackOperation {
 	private final void statusMessage() {
 		if (sender != null && tick % 100 == 0) {
 			long currentTime = System.nanoTime();
-			int sizeX = maxX - minX;
-			int sizeY = maxY - minY;
-			int sizeZ = maxZ - minZ;
+			int sizeX = maxX - minX + 1;
+			int sizeY = maxY - minY + 1;
+			int sizeZ = maxZ - minZ + 1;
 			long maxBlocks = sizeX * sizeY;
 			maxBlocks *= sizeZ;
 			double percent = (blockIndex / (double) maxBlocks) * 100;
@@ -395,7 +393,7 @@ public class Copy extends RollbackOperation {
 
 					// It was absent, so writes it to the file,
 					// then increments the index.
-					
+
 					// START WITH 0 - Notes new data.
 					out.write(0);
 					// Next write whether or not there was extra data.
@@ -438,7 +436,7 @@ public class Copy extends RollbackOperation {
 				FileUtilities.writeShortString(out, allLines);
 			} catch (IndexOutOfBoundsException e) {
 				e.printStackTrace();
-				FileUtilities.writeShortString(out, ""); // To prevent corruption of the output.
+				FileUtilities.writeShort(out, 0); // To prevent corruption of the output.
 			}
 			break;
 		default:

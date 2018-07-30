@@ -173,8 +173,6 @@ public class Paste extends RollbackOperation {
 			}
 		}
 
-		TaskManager.addTask();
-
 		if (!initializeFile()) {
 			return false;
 		}
@@ -224,8 +222,14 @@ public class Paste extends RollbackOperation {
 			// new.
 			copyVersion = in.read();
 
-			if (copyVersion != VERSION) {
+			if (copyVersion > VERSION) {
 				end(EndStatus.FAIL_INCOMPATIBLE_VERSION);
+				return false;
+			} else if (copyVersion < VERSION) {
+				// Initializes conversion.
+				in.close();
+				LegacyUpdater.convert(fileName, this);
+				
 				return false;
 			}
 
@@ -473,9 +477,9 @@ public class Paste extends RollbackOperation {
 		if (sender != null && tick % 100 == 0) {
 			long currentTime = System.nanoTime();
 
-			long maxBlocks = (maxX - minX);
-			maxBlocks *= (maxY - minY);
-			maxBlocks *= (maxZ - minZ);
+			long maxBlocks = (maxX - minX + 1);
+			maxBlocks *= (maxY - minY + 1);
+			maxBlocks *= (maxZ - minZ + 1);
 			double percent = (blockIndex / (double) maxBlocks) * 100;
 			sender.sendMessage(prefix + "Working on paste operation; "
 					+ new DecimalFormat("#.0").format(percent) + "% done (" + blockIndex + "/"
