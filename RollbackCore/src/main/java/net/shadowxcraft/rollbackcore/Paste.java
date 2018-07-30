@@ -34,6 +34,7 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
+import org.bukkit.block.Sign;
 import org.bukkit.block.data.BlockData;
 import org.bukkit.command.CommandSender;
 
@@ -75,12 +76,26 @@ public class Paste extends RollbackOperation {
 	long blockIndex = 0, lastIndex, blocksChanged;// Used to store the index of the block, for
 													// statistical reasons.
 	// TODO: Optimize the cache and the loading of the data.
-	private HashMap<Integer, BlockData> dataCache = new HashMap<Integer, BlockData>(); // Stores the
-																						// blockdata
-																						// for the
-																						// IDs.
+	private HashMap<Integer, BlockCache> dataCache = new HashMap<Integer, BlockCache>(); // Stores
+																							// the
+																							// blockdata
+																							// for
+																							// the
+																							// IDs.
 	public final CommandSender sender; // The sender that all messages are sent to.
 	public final String prefix; // The prefix all messages will have.
+
+	class BlockCache {
+		boolean hasExtraData;
+		BlockData data;
+		int id;
+
+		public BlockCache(int id, boolean hasExtraData, BlockData data) {
+			this.id = id;
+			this.hasExtraData = hasExtraData;
+			this.data = data;
+		}
+	}
 
 	/**
 	 * The legacy constructor for backwards compatibility.
@@ -353,7 +368,7 @@ public class Paste extends RollbackOperation {
 	}
 
 	int id = -1;
-	private BlockData lastData = null;
+	private BlockCache lastData = null;
 	private int count = 0;
 	private final byte[] bytes = new byte[1000];
 
@@ -371,17 +386,29 @@ public class Paste extends RollbackOperation {
 				}
 				if (id == 0) {
 					// New block
+
+					// Reads whether or not there is extra data.
+					boolean hasExtraData = in.read() == 1;
+					// Reads the string.
 					String blockDataString = FileUtilities.readShortString(in, bytes);
-					lastData = Bukkit.createBlockData(blockDataString);
+					// Reads the new ID
 					id = in.read();
+					lastData = new BlockCache(id, hasExtraData,
+							Bukkit.createBlockData(blockDataString));
 					dataCache.put(id, lastData);
+
 				} else {
 					lastData = dataCache.get(id);
 				}
-				count = in.read();
-				if (count == 0) {
-					count = FileUtilities.readShort(in);
+				if (!lastData.hasExtraData) {
+					count = in.read();
+					if (count == 0) {
+						count = FileUtilities.readShort(in);
+					}
+				} else {
+					count = 1;
 				}
+
 			} catch (IOException e) {
 				end(EndStatus.FAIL_IO_ERROR);
 				e.printStackTrace();
@@ -389,15 +416,46 @@ public class Paste extends RollbackOperation {
 		}
 		count--;
 
-		if (!ignoreAir || (!lastData.equals(air) && !lastData.equals(caveAir))) {
+		if (!ignoreAir || (!lastData.data.equals(air) && !lastData.data.equals(caveAir))) {
 			Block currentBlock = world.getBlockAt(tempX, tempY, tempZ);
-			if (!currentBlock.getBlockData().equals(lastData)) {
-				currentBlock.setBlockData(lastData, false);
+			if (lastData.hasExtraData || !currentBlock.getBlockData().equals(lastData.data)) {
+				currentBlock.setBlockData(lastData.data, false);
+				if (lastData.hasExtraData) {
+					updateBlockState(currentBlock);
+				}
 				blocksChanged++;
 			}
 		}
 
 		updateVariables();
+	}
+
+	private final void updateBlockState(Block block) {
+		try {
+			int length = FileUtilities.readShort(in);
+			switch (lastData.data.getMaterial()) {
+			case WALL_SIGN:
+			case SIGN:
+				Sign sign = (Sign) block.getState();
+				String allLines = FileUtilities.readShortString(in, bytes);
+				String[] lines = allLines.split("\\n");
+				int numLines = lines.length;
+				for (int i = 0; i < numLines; i++) {
+					sign.setLine(i, lines[i]);
+				}
+				sign.update(true, false);
+				break;
+			default:
+				Main.plugin.getLogger().warning(
+						"File specifies blockstate data, but RollbackCore does not know how to interpret it. Skipping.");
+				in.skip(length); // To ensure it moves forward as it should.
+				break;
+			}
+		} catch (IOException e) {
+			e.printStackTrace();
+			end(EndStatus.FAIL_IO_ERROR);
+		}
+
 	}
 
 	private final void updateVariables() {

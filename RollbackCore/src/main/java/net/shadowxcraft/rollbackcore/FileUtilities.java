@@ -101,14 +101,6 @@ public class FileUtilities {
 		return new String(buffer, 0, length, StandardCharsets.ISO_8859_1);
 	}
 
-	public static void writeIDAndData(OutputStream out, int id, byte data)
-			throws IllegalArgumentException, IOException {
-		int storedValue = 0;
-		storedValue = (short) (id << 4);
-		storedValue = (short) (storedValue | (data & 15));
-		writeShort(out, storedValue);
-	}
-
 	// public static void readIDAndData(InputStream in) throws IOException {
 	// int storedValue = readShort(in);
 	// System.out.println("ID: " + (storedValue >> 4));

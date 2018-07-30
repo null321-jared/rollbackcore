@@ -30,8 +30,11 @@ import java.util.List;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
+import org.bukkit.block.BlockState;
+import org.bukkit.block.Sign;
 import org.bukkit.block.data.BlockData;
 import org.bukkit.command.CommandSender;
 
@@ -57,10 +60,12 @@ public class Copy extends RollbackOperation {
 
 	// Specific to the operation at hand.
 	long tick = 0; // Used to keep track of how many ticks the copy operation has run.
-	long blockIndex = 0, lastIndex = 0;// Used to store the index of the block, for statistical reasons.
+	long blockIndex = 0, lastIndex = 0;// Used to store the index of the block, for statistical
+										// reasons.
 	private LRUBlockDataCache cache = new LRUBlockDataCache(1, 255); // Stores IDs for the BlockData
 	private int count = 0; // Stores the number of blocks in a row
-	private BlockData lastData = null; // Stores the string representation of the previous block.
+	private LRUBlockDataCache.Node lastData = null; // Stores the string representation of the
+													// previous block.
 
 	/**
 	 * Used to schedule a copy. This is the legacy constructor. Used by the
@@ -79,10 +84,10 @@ public class Copy extends RollbackOperation {
 	 * @param sender   Where status messages will be sent. Null for no messages,
 	 *                 consoleSender for console, and a player for a player.
 	 */
-	public Copy(int minX, int minY, int minZ, int maxX, int maxY, int maxZ, World world, String fileName,
-			CommandSender sender) {
-		this(new Location(world, minX, minY, minZ), new Location(world, maxX, maxY, maxZ), fileName, sender,
-				Main.prefix);
+	public Copy(int minX, int minY, int minZ, int maxX, int maxY, int maxZ, World world,
+			String fileName, CommandSender sender) {
+		this(new Location(world, minX, minY, minZ), new Location(world, maxX, maxY, maxZ), fileName,
+				sender, Main.prefix);
 	}
 
 	/**
@@ -255,7 +260,8 @@ public class Copy extends RollbackOperation {
 			switch (Config.compressionType) {
 			default:
 			case LZ4:
-				out = new LZ4BlockOutputStream(out, 1 << 16, LZ4Factory.fastestInstance().highCompressor());
+				out = new LZ4BlockOutputStream(out, 1 << 16,
+						LZ4Factory.fastestInstance().highCompressor());
 				break;
 			case NONE:
 				out = new BufferedOutputStream(out);
@@ -265,7 +271,7 @@ public class Copy extends RollbackOperation {
 			// out = new GZIPOutputStream(out);
 			}
 
-			// Write 0, but the empty count value already does that!
+			out.write(0); // 0 - nothing left in the header. Start the actual data.
 		} catch (IOException e1) {
 			e1.printStackTrace();
 			end(EndStatus.FAIL_IO_ERROR);
@@ -345,9 +351,11 @@ public class Copy extends RollbackOperation {
 			long maxBlocks = sizeX * sizeY;
 			maxBlocks *= sizeZ;
 			double percent = (blockIndex / (double) maxBlocks) * 100;
-			sender.sendMessage(prefix + "Working on copy operation; " + new DecimalFormat("#.0").format(percent)
-					+ "% done (" + blockIndex + "/" + maxBlocks + ", "
-					+ ((1000000000 * (blockIndex - lastIndex)) / (currentTime - lastTime)) + " blocks/second)");
+			sender.sendMessage(prefix + "Working on copy operation; "
+					+ new DecimalFormat("#.0").format(percent) + "% done (" + blockIndex + "/"
+					+ maxBlocks + ", "
+					+ ((1000000000 * (blockIndex - lastIndex)) / (currentTime - lastTime))
+					+ " blocks/second)");
 
 			lastIndex = blockIndex;
 			lastTime = currentTime;
@@ -361,51 +369,91 @@ public class Copy extends RollbackOperation {
 
 		// Gets the block at the current location.
 		Block block = world.getBlockAt(tempX, tempY, tempZ);
+		// boolean container = containers.contains(block.getType());
 
 		// Gets the value and ID of the block at the location.
 		BlockData data = block.getBlockData();
 
+		// BEFORE: Took about 5 seconds for outset 200 region.
+		// 6.4 seconds with material from the data.
+
 		// Even with the null check, it appears that
-		if (count < 65535 && lastData != null && data.equals(lastData)) {
+		if (count > 0 && count < 65535 && lastData != null && data.equals(lastData.data)) {
 			count++; // Increments the counter
 		} else {
 			// Searches for existing representation of block.
-			int id = cache.get(data);
+			LRUBlockDataCache.Node id = cache.get(data);
 			try {
 				writeCount();
-				count = 1;
-				if (id == -1) {
-					id = cache.add(data);
+				if (id == null) {
+					Material material = data.getMaterial();
+					id = cache.add(data,
+							material == Material.SIGN || material == Material.WALL_SIGN);
 					// New block.
 
 					String dataAsString = data.getAsString();
 
 					// It was absent, so writes it to the file,
 					// then increments the index.
-					out.write(0); // Notes new data.
+					
+					// START WITH 0 - Notes new data.
+					out.write(0);
+					// Next write whether or not there was extra data.
+					out.write(id.hasExtraData ? 1 : 0);
+					// Write the string
 					FileUtilities.writeShortString(out, dataAsString);
-
-					out.write(id);
+					// Write the id value of the data.
+					out.write(id.value);
 				} else {
-					out.write(id); // Now writes the index.
+					out.write(id.value); // Now writes the index.
+				}
+				if (id.hasExtraData) {
+					count = 0;
+					writeBlockState(block.getState());
+				} else {
+					count = 1; // 0 means no count will be written.
 				}
 			} catch (IOException e) {
 				e.printStackTrace();
 				end(EndStatus.FAIL_IO_ERROR);
 			}
-			lastData = data;
+			lastData = id;
 		}
 
 		updateVariables();
 
 	}
 
+	private final void writeBlockState(BlockState blockState) throws IOException {
+		switch (blockState.getType()) {
+		case WALL_SIGN:
+		case SIGN:
+			Sign sign = (Sign) blockState;
+			try {
+				String allLines = sign.getLine(0);
+				for (int i = 1; i < 4; i++) {
+					allLines += '\n' + sign.getLine(i);
+				}
+				FileUtilities.writeShort(out, allLines.length() + 1);
+				FileUtilities.writeShortString(out, allLines);
+			} catch (IndexOutOfBoundsException e) {
+				e.printStackTrace();
+				FileUtilities.writeShortString(out, ""); // To prevent corruption of the output.
+			}
+			break;
+		default:
+			Main.plugin.getLogger().warning("Code requested writing of unknown blockstate!");
+		}
+	}
+
 	private final void writeCount() throws IOException {
-		if (count <= 255) {
-			out.write(count); // Writes the last one's count
-		} else {
-			out.write(0);
-			FileUtilities.writeShort(out, count);
+		if (count != 0) {
+			if (count <= 255) {
+				out.write(count); // Writes the last one's count
+			} else {
+				out.write(0);
+				FileUtilities.writeShort(out, count);
+			}
 		}
 	}
 

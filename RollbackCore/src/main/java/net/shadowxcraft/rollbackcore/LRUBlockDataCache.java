@@ -8,14 +8,16 @@ import org.bukkit.block.data.BlockData;
 
 public class LRUBlockDataCache {
 	class Node {
-		BlockData key;
+		BlockData data;
 		int value;
+		boolean hasExtraData;
 		Node pre;
 		Node next;
 
-		public Node(BlockData key, int value) {
-			this.key = key;
+		public Node(BlockData key, int value, boolean hasExtraData) {
+			this.data = key;
 			this.value = value;
+			this.hasExtraData = hasExtraData;
 		}
 	}
 
@@ -68,15 +70,15 @@ public class LRUBlockDataCache {
 			end = head;
 	}
 	
-	public int get(BlockData key) {
+	public Node get(BlockData key) {
 		Node node = map.get(key);
 		if (node != null) {
 			removeFromList(node);
 			setHead(node);
-			return node.value;
+			return node;
 		}
 
-		return -1;
+		return null;
 	}
 	
 	public int remove(BlockData key) {
@@ -90,24 +92,24 @@ public class LRUBlockDataCache {
 		}
 	}
 
-	public int add(BlockData key) {
+	public Node add(BlockData key, boolean hasExtraData) {
 		Node old = map.get(key);
 		if (old != null) {
-			return old.value;
+			return old;
 		} else {
 			if (unusedValues.isEmpty()) {
 				Node node = end;
-				map.remove(node.key);
+				map.remove(node.data);
 				removeFromList(node);
-				node.key = key;
+				node.data = key;
 				map.put(key, node);
 				setHead(node);
-				return node.value;
+				return node;
 			} else {
-				Node node = new Node(key, unusedValues.removeFirst());
+				Node node = new Node(key, unusedValues.removeFirst(), hasExtraData);
 				setHead(node);
 				map.put(key, node);
-				return node.value;
+				return node;
 			}
 		}
 	}
