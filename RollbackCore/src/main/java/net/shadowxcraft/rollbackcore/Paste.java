@@ -85,18 +85,6 @@ public class Paste extends RollbackOperation {
 	public final CommandSender sender; // The sender that all messages are sent to.
 	public final String prefix; // The prefix all messages will have.
 
-	class BlockCache {
-		boolean hasExtraData;
-		BlockData data;
-		int id;
-
-		public BlockCache(int id, boolean hasExtraData, BlockData data) {
-			this.id = id;
-			this.hasExtraData = hasExtraData;
-			this.data = data;
-		}
-	}
-
 	/**
 	 * The legacy constructor for backwards compatibility.
 	 * 

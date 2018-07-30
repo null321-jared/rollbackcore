@@ -409,7 +409,7 @@ public class Copy extends RollbackOperation {
 				}
 				if (id.hasExtraData) {
 					count = 0;
-					writeBlockState(block.getState());
+					writeBlockState(out, block.getState());
 				} else {
 					count = 1; // 0 means no count will be written.
 				}
@@ -424,7 +424,7 @@ public class Copy extends RollbackOperation {
 
 	}
 
-	private final void writeBlockState(BlockState blockState) throws IOException {
+	static final void writeBlockState(OutputStream out, BlockState blockState) throws IOException {
 		switch (blockState.getType()) {
 		case WALL_SIGN:
 		case SIGN:
