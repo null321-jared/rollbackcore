@@ -193,7 +193,7 @@ public class Copy extends RollbackOperation {
 			return false;
 
 		try {
-			startFile(out, maxX - minX, maxY - minY, maxZ - minZ);
+			out = startFile(out, maxX - minX, maxY - minY, maxZ - minZ);
 		} catch (IllegalArgumentException | IOException e) {
 			end(EndStatus.FAIL_IO_ERROR);
 			e.printStackTrace();
@@ -237,7 +237,8 @@ public class Copy extends RollbackOperation {
 	}
 
 	// Writes the initial data- Version, blocks, and size.
-	static final void startFile(OutputStream out, int diffX, int diffY, int diffZ) throws IllegalArgumentException, IOException {
+	static final OutputStream startFile(OutputStream out, int diffX, int diffY, int diffZ)
+			throws IllegalArgumentException, IOException {
 		// Writes the version so that the plugin can convert/reject incompatible
 		// versions.
 		out.write(VERSION);
@@ -260,6 +261,8 @@ public class Copy extends RollbackOperation {
 		// Value
 		FileUtilities.writeShortString(out, Config.compressionType.name());
 
+		out.write(0); // 0 - nothing left in the header. Start the actual data.
+
 		switch (Config.compressionType) {
 		default:
 		case LZ4:
@@ -270,12 +273,13 @@ public class Copy extends RollbackOperation {
 			out = new BufferedOutputStream(out);
 			break;
 		// out = new DeflaterOutputStream(out); // Corrupts the data- Appears to be a
-		// java issue.
-		// out = new GZIPOutputStream(out);
+		// java issue, or it does not like the fact that it is appended.
+		// out = new DeflaterOutputStream(out, new
+		// Deflater(Deflater.DEFAULT_COMPRESSION, true));
+		// break;
 		}
 
-		out.write(0); // 0 - nothing left in the header. Start the actual data.
-
+		return out;
 	}
 
 	/**

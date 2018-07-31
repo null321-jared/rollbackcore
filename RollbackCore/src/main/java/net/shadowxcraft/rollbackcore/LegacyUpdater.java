@@ -232,7 +232,7 @@ public class LegacyUpdater {
 				// Initializes the FileOutputStream.
 				out = new FileOutputStream(outFile);
 
-				Copy.startFile(out, diffX, diffY, diffZ);
+				out = Copy.startFile(out, diffX, diffY, diffZ);
 			}
 
 			boolean convertMainData() throws IOException {

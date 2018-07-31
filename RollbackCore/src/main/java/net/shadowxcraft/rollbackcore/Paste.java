@@ -221,6 +221,7 @@ public class Paste extends RollbackOperation {
 			// In case the file they are trying to read is in of date or too
 			// new.
 			copyVersion = in.read();
+			CompressionType compression = null;
 
 			if (copyVersion > VERSION) {
 				end(EndStatus.FAIL_INCOMPATIBLE_VERSION);
@@ -229,7 +230,7 @@ public class Paste extends RollbackOperation {
 				// Initializes conversion.
 				in.close();
 				LegacyUpdater.convert(fileName, this);
-				
+
 				return false;
 			}
 
@@ -250,18 +251,8 @@ public class Paste extends RollbackOperation {
 				switch (key) {
 				case "compression":
 					String compressionTypeName = FileUtilities.readString(in, valueLength, bytes);
-					// in = new InflaterInputStream(in); // Corrupts data- May be an issue with
-					// Java.
-					// in = new GZIPInputStream(in);
 					try {
-						CompressionType compression = CompressionType.valueOf(compressionTypeName);
-
-						switch (compression) {
-						case LZ4:
-							in = new LZ4BlockInputStream(in);
-						case NONE:
-							in = new BufferedInputStream(in);
-						}
+						compression = CompressionType.valueOf(compressionTypeName);
 					} catch (IllegalArgumentException e) {
 						end(EndStatus.FAIL_UNKNOWN_COMPRESSION);
 					}
@@ -278,6 +269,20 @@ public class Paste extends RollbackOperation {
 					Main.plugin.getLogger().warning("File being read has an unknown key \"" + key
 							+ "\". Was it written with another program?");
 				}
+			}
+
+			if (compression != null) {
+				switch (compression) {
+				case LZ4:
+					in = new LZ4BlockInputStream(in);
+				case NONE:
+					in = new BufferedInputStream(in);
+				}
+				// in = new InflaterInputStream(in); // Corrupts data
+				// in = new GZIPInputStream(in); // Same
+			} else {
+				end(EndStatus.FAIL_UNKNOWN_COMPRESSION);
+				return false;
 			}
 
 		} catch (IOException e1) {
