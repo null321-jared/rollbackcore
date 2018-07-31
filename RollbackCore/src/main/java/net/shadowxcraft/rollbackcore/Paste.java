@@ -67,7 +67,7 @@ public class Paste extends RollbackOperation {
 			caveAir = Bukkit.createBlockData(Material.CAVE_AIR);
 	private InputStream in;
 	private File file;
-	private long startTime = -1l, lastTime, totalTime;
+	private long startTime = -1l, lastTime;
 	boolean inProgress = false;
 	private int copyVersion;
 
@@ -230,6 +230,9 @@ public class Paste extends RollbackOperation {
 				// Initializes conversion.
 				in.close();
 				LegacyUpdater.convert(fileName, this);
+				if(sender != null) {
+					sender.sendMessage(prefix + "Converting region! This may take some time for larger files. The operation will resume if conversion succeeded.");
+				}
 
 				return false;
 			}
@@ -335,7 +338,6 @@ public class Paste extends RollbackOperation {
 			// Schedules it.
 			Bukkit.getScheduler().runTaskLater(Main.plugin, this, 1);
 		} else {
-			sender.sendMessage("Time spent on subtask: " + totalTime);
 			new PasteEndEvent(this, System.nanoTime() - startTime, blocksChanged, endStatus);
 		}
 	}

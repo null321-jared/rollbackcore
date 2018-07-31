@@ -52,6 +52,7 @@ public class Main extends JavaPlugin {
 			// Failed to submit the stats :-(
 		}
 		Config.loadConfigs(plugin);
+		LegacyUpdater.loadMappings(this);
 	}
 
 	// The plugin's prefix, used for messages.

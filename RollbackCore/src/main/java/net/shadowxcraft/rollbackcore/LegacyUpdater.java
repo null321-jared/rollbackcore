@@ -34,22 +34,27 @@ public class LegacyUpdater {
 				Reader reader = new InputStreamReader(in);
 
 				YamlConfiguration config = new YamlConfiguration();
-				idMappings = new BlockData[256][];
+				idMappings = new BlockData[256][16];
 				try {
 					config.load(reader);
 					for (String idKey : config.getKeys(false)) {
 						ConfigurationSection section = config.getConfigurationSection(idKey);
 						Set<String> dataKeys = section.getKeys(false);
 
-						BlockData[] data = new BlockData[dataKeys.size()];
+						BlockData[] data = idMappings[Integer.parseInt(idKey)];
 
-						for (String dataKey : dataKeys) {
-							data[Integer.parseInt(dataKey)] = Bukkit
-									.createBlockData(section.getString(dataKey));
+						try {
+							for (String dataKey : dataKeys) {
+								data[Integer.parseInt(dataKey)] = Bukkit
+										.createBlockData(section.getString(dataKey));
+							}
+							idMappings[Integer.parseInt(idKey)] = data;
+						} catch (ArrayIndexOutOfBoundsException e) {
+							plugin.getLogger().warning(
+									"Index issue loading indexes " + dataKeys + " of ID " + idKey);
 						}
-						idMappings[Integer.parseInt(idKey)] = data;
 					}
-
+					plugin.getLogger().info("Loaded legacy mappings.");
 				} catch (IOException | InvalidConfigurationException e) {
 					plugin.getLogger().warning("Unable to load mappings! Corrupt jar?");
 					e.printStackTrace();
@@ -170,9 +175,18 @@ public class LegacyUpdater {
 					initFileWrite();
 					convertMainData();
 					in.close();
-					renameFiles();
-					if (pasteToStart != null)
-						Main.plugin.getServer().getScheduler().runTask(Main.plugin, pasteToStart);
+					out.close();
+					if (renameFiles()) {
+						if (pasteToStart != null)
+							Main.plugin.getServer().getScheduler().runTaskLater(Main.plugin,
+									pasteToStart, 1);
+					} else {
+						Main.plugin.getLogger()
+								.warning("Unable to rename the files after conversion. Aborting.");
+						if (pasteToStart != null) {
+							pasteToStart.end(EndStatus.FAIL_IO_ERROR);
+						}
+					}
 				} catch (FileNotFoundException e) {
 					if (pasteToStart != null)
 						pasteToStart.end(EndStatus.FAIL_NO_SUCH_FILE);
@@ -240,6 +254,7 @@ public class LegacyUpdater {
 				BlockData lastData = null;
 				int lastCount = 0;
 				String[] lastLines = null;
+				int[] flowerData = new int[diffZ + 1];
 
 				for (int position = 0; position < maxPosition;) {
 					BlockData data = null;
@@ -268,11 +283,31 @@ public class LegacyUpdater {
 							return false;
 						}
 
-						data = idMappings[currentId][currentData];
-
 						// For compression, it reads how many
 						// times this block is repeated.
 						compressCount = in.read();
+
+						// Hack, because top half data isn't detailed in pre-1.13
+						if (currentId == 175) {
+							for (int diff = 0; diff < compressCount; diff++) {
+								if (currentData < 8) {
+									flowerData[(position + lastCount + diff)
+											% (diffZ + 1)] = currentData;
+								} else {
+									currentData = flowerData[(position + lastCount + diff)
+											% (diffZ + 1)] + 8;
+								}
+							}
+						}
+
+						if (currentData < 16 && currentId < 256)
+							data = idMappings[currentId][currentData];
+						else
+							data = null;
+						if (data == null) {
+							System.out.println("Unknown: " + currentId + " " + currentData);
+							data = idMappings[0][0]; // air
+						}
 
 						// The following code is to read sign
 						// text.
@@ -281,19 +316,23 @@ public class LegacyUpdater {
 						}
 					}
 
-					if (data == null || !data.equals(lastData) || lastCount > 65280
+					if (lastData == null) {
+						lastData = data;
+						lastLines = lines;
+						lastCount += compressCount;
+					} else if (data == null || !data.equals(lastData) || lastCount > 65280
 							|| lastCount == 0) {
 						position += lastCount;
 
 						// Write the old IDs to file.
 						LRUBlockDataCache.Node id = cache.get(lastData);
 						if (id == null) {
-							Material material = data.getMaterial();
-							id = cache.add(data,
+							Material material = lastData.getMaterial();
+							id = cache.add(lastData,
 									material == Material.SIGN || material == Material.WALL_SIGN);
 							// New block.
 
-							String dataAsString = data.getAsString();
+							String dataAsString = lastData.getAsString();
 
 							// It was absent, so writes it to the file,
 							// then increments the index.
@@ -368,14 +407,22 @@ public class LegacyUpdater {
 				}
 				return lines;
 			}
-			
-			void renameFiles() {
+
+			/**
+			 * Renames the files.
+			 * 
+			 * @return True if both succeeded. False if either failed.
+			 */
+			boolean renameFiles() {
 				File newNameForOld = new File(fileName + "_old");
-				inFile.renameTo(newNameForOld);
-				
+				if (!inFile.renameTo(newNameForOld))
+					return false;
+
 				File newNameForNew = new File(fileName);
-				outFile.renameTo(newNameForNew);
-				
+				if (!outFile.renameTo(newNameForNew))
+					return false;
+				return true; // success
+
 			}
 		}.runTaskAsynchronously(Main.plugin);
 	}

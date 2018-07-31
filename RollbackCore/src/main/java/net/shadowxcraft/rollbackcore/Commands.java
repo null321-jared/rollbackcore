@@ -187,8 +187,14 @@ public class Commands implements CommandExecutor {
 			} else { // lastValidArg == 1
 				if (sender instanceof Player) {
 					Vector minVector = Rollback.getSelectionMin((Player) sender);
-					min = new Location(((Player) sender).getWorld(), minVector.getX(),
-							minVector.getY(), minVector.getZ());
+					if (minVector != null) {
+						min = new Location(((Player) sender).getWorld(), minVector.getX(),
+								minVector.getY(), minVector.getZ());
+					} else {
+						sender.sendMessage(prefix
+								+ "You don't have a worldedit selection. Either create one, or specify the coordinates in the command.");
+						return;
+					}
 				} else {
 					sender.sendMessage(prefix
 							+ "Non-player command executors must specify all location details!");
