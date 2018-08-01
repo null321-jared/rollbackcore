@@ -177,14 +177,22 @@ public class LegacyUpdater {
 					in.close();
 					out.close();
 					if (renameFiles()) {
-						if (pasteToStart != null)
+						if (pasteToStart != null) {
 							Main.plugin.getServer().getScheduler().runTaskLater(Main.plugin,
 									pasteToStart, 1);
+							if (pasteToStart.sender != null)
+								pasteToStart.sender.sendMessage(pasteToStart.prefix
+										+ "Converted sucessfully! Starting paste.");
+
+						}
 					} else {
 						Main.plugin.getLogger()
 								.warning("Unable to rename the files after conversion. Aborting.");
 						if (pasteToStart != null) {
 							pasteToStart.end(EndStatus.FAIL_IO_ERROR);
+							if (pasteToStart.sender != null)
+								pasteToStart.sender.sendMessage(pasteToStart.prefix
+										+ "Unable to rename the files after conversion. Aborting.");
 						}
 					}
 				} catch (FileNotFoundException e) {
@@ -426,7 +434,7 @@ public class LegacyUpdater {
 			}
 		}.runTaskAsynchronously(Main.plugin);
 	}
-	
+
 	private static final int legacyReadShort(InputStream in) throws IOException {
 		int temp = 0;
 
