@@ -407,7 +407,6 @@ public class Paste extends RollbackOperation {
 				} else {
 					count = 1;
 				}
-
 			} catch (IOException e) {
 				end(EndStatus.FAIL_IO_ERROR);
 				e.printStackTrace();

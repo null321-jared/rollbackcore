@@ -30,6 +30,10 @@
 					to download a SNAPSHOT dependency -->
 			</snapshots>
 		</repository>
+		<repository>
+			<id>bstats-repo</id>
+			<url>http://repo.bstats.org/content/repositories/releases/</url>
+		</repository>
 	</repositories>
 	<dependencies>
 		<!--Spigot API -->
@@ -59,30 +63,45 @@
 			<version>1.4.1</version>
 			<scope>compile</scope>
 		</dependency>
+		<dependency>
+			<groupId>org.bstats</groupId>
+			<artifactId>bstats-bukkit</artifactId>
+			<version>1.2</version>
+			<scope>compile</scope>
+		</dependency>
 	</dependencies>
 	<build>
-        <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-shade-plugin</artifactId>
-                <version>2.4.3</version>
-                <executions>
-                    <execution>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>shade</goal>
-                        </goals>
-                        <configuration>
-                            <artifactSet>
-                                <includes>
-                                    <include>org.lz4:lz4-java</include>
-                                </includes>
-                            </artifactSet>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-        </plugins>
-    </build>
+		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-shade-plugin</artifactId>
+				<version>2.4.3</version>
+				<configuration>
+					<relocations>
+						<relocation>
+							<pattern>org.bstats</pattern>
+							<shadedPattern>net.shadowxcraft.rollbackcore.bukkit</shadedPattern>
+						</relocation>
+					</relocations>
+				</configuration>
+				<executions>
+					<execution>
+						<phase>package</phase>
+						<goals>
+							<goal>shade</goal>
+						</goals>
+						<configuration>
+							<artifactSet>
+								<includes>
+									<include>org.lz4:lz4-java</include>
+									<include>org.bstats:bstats-bukkit</include>
+								</includes>
+							</artifactSet>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+		</plugins>
+	</build>
 	<version>3.0.0</version>
 </project>

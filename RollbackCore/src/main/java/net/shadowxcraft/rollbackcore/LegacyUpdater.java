@@ -227,9 +227,9 @@ public class LegacyUpdater {
 				}
 
 				// Reads the sizes using readShort because it can be larger than 255
-				diffX = FileUtilities.readShort(in);
-				diffY = FileUtilities.readShort(in);
-				diffZ = FileUtilities.readShort(in);
+				diffX = legacyReadShort(in);
+				diffY = legacyReadShort(in);
+				diffZ = legacyReadShort(in);
 			}
 
 			void initFileWrite() throws IOException {
@@ -425,5 +425,14 @@ public class LegacyUpdater {
 
 			}
 		}.runTaskAsynchronously(Main.plugin);
+	}
+	
+	private static final int legacyReadShort(InputStream in) throws IOException {
+		int temp = 0;
+
+		temp += in.read() * 255;
+		temp += in.read();
+
+		return temp;
 	}
 }
