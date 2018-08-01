@@ -357,6 +357,7 @@
   '2': minecraft:wall_torch[facing=west]
   '3': minecraft:wall_torch[facing=south]
   '4': minecraft:wall_torch[facing=north]
+  '5': minecraft:torch
 '51':
   '0': minecraft:fire[age=0,east=false,north=false,south=false,up=false,west=false]
   '1': minecraft:fire[age=1,east=false,north=false,south=false,up=false,west=false]
