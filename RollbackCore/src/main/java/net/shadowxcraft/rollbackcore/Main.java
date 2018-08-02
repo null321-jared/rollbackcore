@@ -43,7 +43,6 @@ public class Main extends JavaPlugin {
 		// Register the rollback command
 		getCommand("rollback").setExecutor(new Commands(this, prefix));
 		getServer().getPluginManager().registerEvents(new BukkitListener(), plugin);
-		getServer().getPluginManager().registerEvents(new NewListeners(), plugin);
 
 		try {
 			savesPath = Paths.get(getDataFolder().getAbsolutePath(), "/saves");

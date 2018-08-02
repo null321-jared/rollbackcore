@@ -27,11 +27,13 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockBurnEvent;
+import org.bukkit.event.block.BlockExplodeEvent;
 import org.bukkit.event.block.BlockFadeEvent;
 import org.bukkit.event.block.BlockFormEvent;
 import org.bukkit.event.block.BlockFromToEvent;
 import org.bukkit.event.block.BlockGrowEvent;
 import org.bukkit.event.block.BlockIgniteEvent;
+import org.bukkit.event.block.BlockMultiPlaceEvent;
 import org.bukkit.event.block.BlockPistonExtendEvent;
 import org.bukkit.event.block.BlockPistonRetractEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
@@ -48,6 +50,21 @@ import org.bukkit.event.player.PlayerInteractEvent;
  * @author lizardfreak321
  */
 public class BukkitListener implements Listener {
+
+	@EventHandler(priority = EventPriority.MONITOR)
+	public void onBlockExplodeEvent(BlockExplodeEvent event) {
+		if (!event.isCancelled()) {
+			WatchDogRegion.logBlock(event.getBlock());
+		}
+	}
+
+	@EventHandler(priority = EventPriority.MONITOR)
+	public void onBlockMultiPlaceEvent(BlockMultiPlaceEvent event) {
+		if (!event.isCancelled()) {
+			WatchDogRegion.logBlock(event.getBlockPlaced());
+			WatchDogRegion.logBlock(event.getBlockAgainst());
+		}
+	}
 
 	@EventHandler(priority = EventPriority.MONITOR)
 	public void onBlockBreakEvent(BlockBreakEvent event) {
@@ -136,7 +153,6 @@ public class BukkitListener implements Listener {
 		}
 	}
 
-
 	@EventHandler(priority = EventPriority.MONITOR)
 	public void onBlockSpreadEvent(BlockSpreadEvent event) {
 		if (!event.isCancelled()) {
@@ -173,8 +189,10 @@ public class BukkitListener implements Listener {
 			Material mt = event.getMaterial();
 			if (event.getAction().equals(Action.RIGHT_CLICK_BLOCK)) {
 				if (mt.equals(Material.WATER_BUCKET) || mt.equals(Material.LAVA_BUCKET)
-						|| mt.equals(Material.FIREWORK_ROCKET) || mt.equals(Material.FLINT_AND_STEEL)) {
-					WatchDogRegion.logBlock(event.getClickedBlock().getRelative(event.getBlockFace()));
+						|| mt.equals(Material.FIREWORK_ROCKET)
+						|| mt.equals(Material.FLINT_AND_STEEL)) {
+					WatchDogRegion
+							.logBlock(event.getClickedBlock().getRelative(event.getBlockFace()));
 				}
 				if (event.getClickedBlock().getType().equals(Material.TNT)) {
 					WatchDogRegion.logBlock(event.getClickedBlock());
