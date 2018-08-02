@@ -83,6 +83,16 @@
 							<shadedPattern>net.shadowxcraft.rollbackcore.bukkit</shadedPattern>
 						</relocation>
 					</relocations>
+					<filters>
+						<filter>
+							<artifact>org.lz4:lz4-java</artifact>
+							<excludes>
+								<exclude>net/jpountz/util/darwin/**</exclude>
+								<exclude>net/jpountz/util/linux/**</exclude>
+								<exclude>net/jpountz/util/win32/**</exclude>
+							</excludes>
+						</filter>
+					</filters>
 				</configuration>
 				<executions>
 					<execution>
