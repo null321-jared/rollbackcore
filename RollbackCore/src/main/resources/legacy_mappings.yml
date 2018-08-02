@@ -131,6 +131,10 @@
   '9': minecraft:spruce_log[axis=z]
   '10': minecraft:birch_log[axis=z]
   '11': minecraft:jungle_log[axis=z]
+  '12': minecraft:oak_wood[axis=y]
+  '13': minecraft:spruce_wood[axis=y]
+  '14': minecraft:birch_wood[axis=y]
+  '15': minecraft:jungle_wood[axis=y]
 '18':
   '0': minecraft:oak_leaves[distance=7,persistent=false]
   '1': minecraft:spruce_leaves[distance=7,persistent=false]
@@ -1265,6 +1269,8 @@
   '5': minecraft:dark_oak_log[axis=x]
   '8': minecraft:acacia_log[axis=z]
   '9': minecraft:dark_oak_log[axis=z]
+  '12': minecraft:acacia_wood[axis=y]
+  '13': minecraft:dark_oak_wood[axis=y]
 '163':
   '0': minecraft:acacia_stairs[facing=east,half=bottom,shape=straight,waterlogged=false]
   '1': minecraft:acacia_stairs[facing=west,half=bottom,shape=straight,waterlogged=false]
