@@ -26,29 +26,29 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.scheduler.BukkitTask;
 
 /**
- * The RollbackOperation class is a parent class for all of the copy/paste rollback operations. It
- * contains all of the things they share.
+ * The RollbackOperation class is a parent class for all of the copy/paste
+ * rollback operations. It contains all of the things they share.
  * 
  * @author lizardfreak321
  * @since 2.0
  */
 abstract class RollbackOperation implements Runnable {
 	protected static String mcVersion;
-	
+
 	protected World world;
 	protected int minX, minY, minZ;
 	protected int tempX, tempY, tempZ;
-	public CommandSender sender;		// The optional sender of messages.
-	public String prefix;				// The prefixes used by messages if sender is not null
-	protected String fileName;			// The name and directory of the file.
-	protected BukkitTask task = null;			// The ID of the task running for the operation.
+	public CommandSender sender; // The optional sender of messages.
+	public String prefix; // The prefixes used by messages if sender is not null
+	protected String fileName; // The name and directory of the file.
+	protected BukkitTask task = null; // The ID of the task running for the operation.
 	public static final int VERSION = 2;// The current version of the plugin storage format.
 	private int lastChunkX, minChunkZ, lastChunkZ;// To keep track of when to unload the row of
 													// chunks.
 	private int zChunks;
 	private boolean[] loadedChunks;
 	private boolean writing;
-	
+
 	protected RollbackOperation(Location min, boolean writing) {
 		this.world = min.getWorld();
 		this.minX = min.getBlockX();
@@ -61,10 +61,9 @@ abstract class RollbackOperation implements Runnable {
 	}
 
 	protected void initChunkUnloading(int maxZ) {
-		
 
 		this.lastChunkX = minX >> 4; // Not one less so that it doesn't
-												 // think it must unload it all.
+										// think it must unload it all.
 		this.minChunkZ = minZ >> 4; // One less so it knows to save it.
 		this.lastChunkZ = this.minChunkZ - 1; // One less so it knows to save it.
 
@@ -74,18 +73,16 @@ abstract class RollbackOperation implements Runnable {
 	}
 
 	/**
-	 * Call this every time the rollback operation
-	 * with iteration order z y x moves to the next location.
+	 * Call this every time the rollback operation with iteration order z y x moves
+	 * to the next location.
 	 * 
-	 * IMPORTANT: Call this BEFORE the chunk is accessed to ensure
-	 * that it knows whether or not it was loaded beforehand.
+	 * IMPORTANT: Call this BEFORE the chunk is accessed to ensure that it knows
+	 * whether or not it was loaded beforehand.
 	 * 
-	 * This will store which ones were loaded beforehand,
-	 * and it will unload the ones that are no longer
-	 * being used by the operation.
+	 * This will store which ones were loaded beforehand, and it will unload the
+	 * ones that are no longer being used by the operation.
 	 * 
-	 * @param loc
-	 *            The next location.
+	 * @param loc The next location.
 	 */
 	protected void nextLocation(int tempX, int tempZ) {
 		int locChunkX = tempX >> 4;
@@ -100,7 +97,7 @@ abstract class RollbackOperation implements Runnable {
 					// Was not loaded. Assume it is safe to do so, because
 					// unless a player was moving really fast, the chances
 					// of them getting closer to the chunk is very slim.
-					
+
 					// We can't use 'request' because in large tests, they
 					// weren't actually unloaded, leading towards a crash.
 					world.unloadChunk(this.lastChunkX, this.minChunkZ + i, writing);
@@ -114,9 +111,56 @@ abstract class RollbackOperation implements Runnable {
 			this.lastChunkZ = locChunkZ;
 		}
 	}
-	
+
+	long lastIndex, lastTime;
+
+	// Used to send status messages to the "sender" if the sender is not null.
+	protected final void statusMessage(int maxX, int maxY, int maxZ, long currentIndex, long tick,
+			String operationName) {
+		if (sender != null && tick % 100 == 0) {
+			long currentTime = System.nanoTime();
+			int sizeX = maxX - minX + 1;
+			int sizeY = maxY - minY + 1;
+			int sizeZ = maxZ - minZ + 1;
+			long maxBlocks = sizeX * sizeY;
+			maxBlocks *= sizeZ;
+
+			// Calculate percentage remaining
+			double percent = Math.round((double) 10000 * (currentIndex / (double) maxBlocks)) / 100;
+
+			// Calculate the rate of progress
+			double blocksPerSecond = (1000000000 * (currentIndex - lastIndex))
+					/ (currentTime - lastTime);
+
+			// Format it for the user
+			String detailedProgress = "(" + currentIndex + "/" + maxBlocks + ", "
+					+ (int) Math.round(blocksPerSecond) + " blocks/second).";
+			int estimatedTimeLeft = (int) Math
+					.round(100 * ((maxBlocks - currentIndex) / blocksPerSecond)) / 100;
+
+			String estimatedTimeLeftString = "";
+			if (estimatedTimeLeft > 0) {
+				estimatedTimeLeftString = "Estimated time left: ";
+				if (estimatedTimeLeft >= 60) {
+					estimatedTimeLeftString += (int) (estimatedTimeLeft / 60) + " minutes ";
+				} else {
+					estimatedTimeLeftString += (estimatedTimeLeft % 60) + " seconds.";
+				}
+			}
+
+			// Send to player
+			sender.sendMessage(prefix + "Working on " + operationName + " operation: " + percent
+					+ "% done " + detailedProgress + " " + estimatedTimeLeftString);
+
+			// Update variables to keep track.
+			lastIndex = currentIndex;
+			lastTime = currentTime;
+		}
+	}
+
 	static {
 		String bukkitVersion = Bukkit.getVersion();
-		mcVersion = bukkitVersion.substring(bukkitVersion.lastIndexOf(' ') + 1, bukkitVersion.indexOf(')'));
+		mcVersion = bukkitVersion.substring(bukkitVersion.lastIndexOf(' ') + 1,
+				bukkitVersion.indexOf(')'));
 	}
 }

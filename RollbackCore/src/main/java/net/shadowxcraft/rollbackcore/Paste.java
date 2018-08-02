@@ -24,7 +24,6 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -67,14 +66,14 @@ public class Paste extends RollbackOperation {
 			caveAir = Bukkit.createBlockData(Material.CAVE_AIR);
 	private InputStream in;
 	private File file;
-	private long startTime = -1l, lastTime;
+	private long startTime = -1l;
 	boolean inProgress = false;
 	private int copyVersion;
 
 	// Specific to the operation at hand.
 	long tick = 0; // Used to keep track of how many ticks the copy operation has run.
-	long blockIndex = 0, lastIndex, blocksChanged;// Used to store the index of the block, for
-													// statistical reasons.
+	long blockIndex = 0, blocksChanged;// Used to store the index of the block, for
+										// statistical reasons.
 	// TODO: Optimize the cache and the loading of the data.
 	private HashMap<Integer, BlockCache> dataCache = new HashMap<Integer, BlockCache>(); // Stores
 																							// the
@@ -82,8 +81,6 @@ public class Paste extends RollbackOperation {
 																							// for
 																							// the
 																							// IDs.
-	public final CommandSender sender; // The sender that all messages are sent to.
-	public final String prefix; // The prefix all messages will have.
 
 	/**
 	 * The legacy constructor for backwards compatibility.
@@ -230,8 +227,9 @@ public class Paste extends RollbackOperation {
 				// Initializes conversion.
 				in.close();
 				LegacyUpdater.convert(fileName, this);
-				if(sender != null) {
-					sender.sendMessage(prefix + "Converting region! This may take some time for larger files. The operation will resume if conversion succeeded.");
+				if (sender != null) {
+					sender.sendMessage(prefix
+							+ "Converting region! This may take some time for larger files. The operation will resume if conversion succeeded.");
 				}
 
 				return false;
@@ -363,7 +361,7 @@ public class Paste extends RollbackOperation {
 			}
 		}
 
-		statusMessage();
+		statusMessage(maxX, maxY, maxZ, blockIndex, tick, "paste");
 	}
 
 	int id = -1;
@@ -475,25 +473,6 @@ public class Paste extends RollbackOperation {
 				// Move X - does not need wrapping
 				tempX += 1;
 			}
-		}
-	}
-
-	// Used to send status messages to the "sender" if the sender is not null.
-	private final void statusMessage() {
-		if (sender != null && tick % 100 == 0) {
-			long currentTime = System.nanoTime();
-
-			long maxBlocks = (maxX - minX + 1);
-			maxBlocks *= (maxY - minY + 1);
-			maxBlocks *= (maxZ - minZ + 1);
-			double percent = (blockIndex / (double) maxBlocks) * 100;
-			sender.sendMessage(prefix + "Working on paste operation; "
-					+ new DecimalFormat("#.0").format(percent) + "% done (" + blockIndex + "/"
-					+ maxBlocks + ", "
-					+ ((1000000000 * (blockIndex - lastIndex)) / (currentTime - lastTime))
-					+ " blocks/second)");
-			lastIndex = blockIndex;
-			lastTime = currentTime;
 		}
 	}
 

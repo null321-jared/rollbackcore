@@ -24,7 +24,6 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -54,7 +53,7 @@ public class Copy extends RollbackOperation {
 	private int maxX, maxY, maxZ;
 	private OutputStream out;
 	private File file;
-	private long startTime = -1l, lastTime;
+	private long startTime = -1l;
 	private static final List<Copy> runningCopies = new ArrayList<Copy>();
 	boolean inProgress = false;
 
@@ -341,27 +340,7 @@ public class Copy extends RollbackOperation {
 			}
 		}
 
-		statusMessage();
-	}
-
-	private final void statusMessage() {
-		if (sender != null && tick % 100 == 0) {
-			long currentTime = System.nanoTime();
-			int sizeX = maxX - minX + 1;
-			int sizeY = maxY - minY + 1;
-			int sizeZ = maxZ - minZ + 1;
-			long maxBlocks = sizeX * sizeY;
-			maxBlocks *= sizeZ;
-			double percent = (blockIndex / (double) maxBlocks) * 100;
-			sender.sendMessage(prefix + "Working on copy operation; "
-					+ new DecimalFormat("#.0").format(percent) + "% done (" + blockIndex + "/"
-					+ maxBlocks + ", "
-					+ ((1000000000 * (blockIndex - lastIndex)) / (currentTime - lastTime))
-					+ " blocks/second)");
-
-			lastIndex = blockIndex;
-			lastTime = currentTime;
-		}
+		statusMessage(maxX, maxY, maxZ, blockIndex, tick, "copy");
 	}
 
 	private final void nextBlock() {
