@@ -103,5 +103,5 @@
 			</plugin>
 		</plugins>
 	</build>
-	<version>3.0.0</version>
+	<version>3.0.0-BETA</version>
 </project>

@@ -1,6 +1,6 @@
 name: RollbackCore
 main: net.shadowxcraft.rollbackcore.Main
-version: 3.0
+version: 3.0-BETA
 api-version: 1.13
 softdepend: [WorldEdit]
 commands:
