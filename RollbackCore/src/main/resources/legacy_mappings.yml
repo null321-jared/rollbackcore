@@ -960,10 +960,16 @@
 '132':
   '0': minecraft:tripwire[attached=false,disarmed=false,east=false,north=false,powered=false,south=false,west=false]
   '1': minecraft:tripwire[attached=false,disarmed=false,east=false,north=false,powered=true,south=false,west=false]
+  '2': minecraft:tripwire[attached=false,disarmed=false,east=false,north=false,powered=false,south=false,west=false]
+  '3': minecraft:tripwire[attached=false,disarmed=false,east=false,north=false,powered=true,south=false,west=false]
   '4': minecraft:tripwire[attached=true,disarmed=false,east=false,north=false,powered=false,south=false,west=false]
   '5': minecraft:tripwire[attached=true,disarmed=false,east=false,north=false,powered=true,south=false,west=false]
+  '6': minecraft:tripwire[attached=true,disarmed=false,east=false,north=false,powered=false,south=false,west=false]
+  '7': minecraft:tripwire[attached=true,disarmed=false,east=false,north=false,powered=true,south=false,west=false]
   '8': minecraft:tripwire[attached=false,disarmed=true,east=false,north=false,powered=false,south=false,west=false]
   '9': minecraft:tripwire[attached=false,disarmed=true,east=false,north=false,powered=true,south=false,west=false]
+  '10': minecraft:tripwire[attached=false,disarmed=true,east=false,north=false,powered=false,south=false,west=false]
+  '11': minecraft:tripwire[attached=false,disarmed=true,east=false,north=false,powered=true,south=false,west=false]
   '12': minecraft:tripwire[attached=true,disarmed=true,east=false,north=false,powered=false,south=false,west=false]
   '13': minecraft:tripwire[attached=true,disarmed=true,east=false,north=false,powered=true,south=false,west=false]
 '133':
@@ -1014,7 +1020,20 @@
   '0': minecraft:cobblestone_wall[east=false,north=false,south=false,up=false,waterlogged=false,west=false]
   '1': minecraft:mossy_cobblestone_wall[east=false,north=false,south=false,up=false,waterlogged=false,west=false]
 '140':
-  '0': minecraft:potted_cactus
+  '0': minecraft:flower_pot
+  '1': minecraft:potted_poppy
+  '2': minecraft:potted_dandelion
+  '3': minecraft:potted_oak_sapling
+  '4': minecraft:potted_spruce_sapling
+  '5': minecraft:potted_birch_sapling
+  '6': minecraft:potted_jungle_sapling
+  '7': minecraft:potted_red_mushroom
+  '8': minecraft:potted_brown_mushroom
+  '9': minecraft:potted_cactus
+  '10': potted_dead_bush
+  '11': minecraft:potted_fern
+  '12': minecraft:potted_oxeye_daisy
+  '13': minecraft:potted_oak_sapling
 '141':
   '0': minecraft:carrots[age=0]
   '1': minecraft:carrots[age=1]

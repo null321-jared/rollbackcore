@@ -38,6 +38,7 @@ import org.bukkit.block.data.BlockData;
 import org.bukkit.command.CommandSender;
 
 import net.jpountz.lz4.LZ4BlockInputStream;
+import net.jpountz.lz4.LZ4Factory;
 import net.shadowxcraft.rollbackcore.events.EndStatus;
 import net.shadowxcraft.rollbackcore.events.PasteEndEvent;
 
@@ -159,7 +160,8 @@ public class Paste extends RollbackOperation {
 
 	// The internal method to start the copy operation.
 	protected final boolean initPaste() {
-		startTime = System.nanoTime();
+		if (startTime == -1l)
+			startTime = System.nanoTime();
 		lastTime = startTime;
 		// Checks if there are any currently running pastes of the exact same thing.
 		for (Paste runningPaste : runningPastes) {
@@ -275,7 +277,7 @@ public class Paste extends RollbackOperation {
 			if (compression != null) {
 				switch (compression) {
 				case LZ4:
-					in = new LZ4BlockInputStream(in);
+					in = new LZ4BlockInputStream(in, LZ4Factory.safeInstance().fastDecompressor());
 				case NONE:
 					in = new BufferedInputStream(in);
 				}

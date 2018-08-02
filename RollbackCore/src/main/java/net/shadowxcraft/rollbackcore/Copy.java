@@ -265,8 +265,8 @@ public class Copy extends RollbackOperation {
 		switch (Config.compressionType) {
 		default:
 		case LZ4:
-			out = new LZ4BlockOutputStream(out, 1 << 16,
-					LZ4Factory.fastestInstance().highCompressor());
+			out = new BufferedOutputStream(new LZ4BlockOutputStream(out, 1 << 16,
+					LZ4Factory.safeInstance().highCompressor()));
 			break;
 		case NONE:
 			out = new BufferedOutputStream(out);

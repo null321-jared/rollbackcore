@@ -356,12 +356,12 @@ public class Rollback {
 
 			// It needs to check 6 values, so it only checks when there are 6+
 			while (in.available() >= 6) {
-				file = FileUtilities.readShort(in);
+				file = LegacyUpdater.legacyReadShort(in);
 
 				// Read the width, height, and depth.
-				differenceX = FileUtilities.readShort(in);
-				differenceY = FileUtilities.readShort(in);
-				differenceZ = FileUtilities.readShort(in);
+				differenceX = LegacyUpdater.legacyReadShort(in);
+				differenceY = LegacyUpdater.legacyReadShort(in);
+				differenceZ = LegacyUpdater.legacyReadShort(in);
 
 				// Adds the paste to the ArrayList so it can be pasted later.
 				pastes.add(new Paste(x + (differenceX * SIZE), y + (differenceY * SIZE),

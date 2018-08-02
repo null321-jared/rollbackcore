@@ -439,7 +439,7 @@ public class LegacyUpdater {
 		}.runTaskAsynchronously(Main.plugin);
 	}
 
-	private static final int legacyReadShort(InputStream in) throws IOException {
+	static final int legacyReadShort(InputStream in) throws IOException {
 		int temp = 0;
 
 		temp += in.read() * 255;
