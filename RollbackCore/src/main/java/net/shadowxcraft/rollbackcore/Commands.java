@@ -107,7 +107,7 @@ public class Commands implements CommandExecutor {
 	private final void addArenaCommand(CommandSender sender, String[] args) {
 		// addarena command.
 		if (!(sender instanceof ConsoleCommandSender)) {
-			if (args.length == 2 && Bukkit.getWorld(args[1]) != null) {
+			if (args.length == 2) {
 				Rollback.copy((Player) sender, args[1], true);
 			} else {
 				sender.sendMessage(prefix + "Usage: /rollback addarena <name>");
