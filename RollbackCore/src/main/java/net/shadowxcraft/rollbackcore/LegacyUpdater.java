@@ -286,41 +286,45 @@ public class LegacyUpdater {
 						// when there was a copy error or the
 						// file got corrupted.
 						if (currentId == -1 || currentData == -1) {
-							Main.plugin.getLogger()
-									.warning("File ended early in conversion to new version.");
-							return false;
-						}
+							if (lastData == null) {
+								// reached end.
+								return true;
+							}
+							data = null;
+							compressCount = -1;
+						} else {
 
-						// For compression, it reads how many
-						// times this block is repeated.
-						compressCount = in.read();
+							// For compression, it reads how many
+							// times this block is repeated.
+							compressCount = in.read();
 
-						// Hack, because top half data isn't detailed in pre-1.13
-						if (currentId == 175) {
-							for (int diff = 0; diff < compressCount; diff++) {
-								if (currentData < 8) {
-									flowerData[(position + lastCount + diff)
-											% (diffZ + 1)] = currentData;
-								} else {
-									currentData = flowerData[(position + lastCount + diff)
-											% (diffZ + 1)] + 8;
+							// Hack, because top half data isn't detailed in pre-1.13
+							if (currentId == 175) {
+								for (int diff = 0; diff < compressCount; diff++) {
+									if (currentData < 8) {
+										flowerData[(position + lastCount + diff)
+												% (diffZ + 1)] = currentData;
+									} else {
+										currentData = flowerData[(position + lastCount + diff)
+												% (diffZ + 1)] + 8;
+									}
 								}
 							}
-						}
 
-						if (currentData < 16 && currentId < 256)
-							data = idMappings[currentId][currentData];
-						else
-							data = null;
-						if (data == null) {
-							System.out.println("Unknown: " + currentId + " " + currentData);
-							data = idMappings[0][0]; // air
-						}
+							if (currentData < 16 && currentId < 256)
+								data = idMappings[currentId][currentData];
+							else
+								data = null;
+							if (data == null) {
+								System.out.println("Unknown: " + currentId + " " + currentData);
+								data = idMappings[0][0]; // air
+							}
 
-						// The following code is to read sign
-						// text.
-						if (compressCount == 0) {
-							lines = getLines();
+							// The following code is to read sign
+							// text.
+							if (compressCount == 0) {
+								lines = getLines();
+							}
 						}
 					}
 

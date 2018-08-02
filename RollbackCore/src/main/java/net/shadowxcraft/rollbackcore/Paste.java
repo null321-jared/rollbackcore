@@ -334,7 +334,7 @@ public class Paste extends RollbackOperation {
 			nextPaste.startTime = this.startTime;
 			nextPaste.blocksChanged = blocksChanged;
 			// Schedules it.
-			Bukkit.getScheduler().runTaskLater(Main.plugin, this, 1);
+			Bukkit.getScheduler().runTaskLater(Main.plugin, nextPaste, 1);
 		} else {
 			new PasteEndEvent(this, System.nanoTime() - startTime, blocksChanged, endStatus);
 		}
