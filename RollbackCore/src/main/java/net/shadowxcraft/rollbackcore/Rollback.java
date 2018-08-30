@@ -34,10 +34,15 @@ import org.bukkit.World;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
+import com.sk89q.worldedit.IncompleteRegionException;
+import com.sk89q.worldedit.LocalSession;
 import com.sk89q.worldedit.Vector;
+import com.sk89q.worldedit.WorldEdit;
+import com.sk89q.worldedit.bukkit.BukkitAdapter;
+import com.sk89q.worldedit.bukkit.BukkitPlayer;
 import com.sk89q.worldedit.bukkit.WorldEditPlugin;
-import com.sk89q.worldedit.bukkit.selections.CuboidSelection;
-import com.sk89q.worldedit.bukkit.selections.Selection;
+import com.sk89q.worldedit.regions.CuboidRegion;
+import com.sk89q.worldedit.regions.Region;
 
 /**
  * The rollback Utility class. Used to start some operations.
@@ -74,38 +79,45 @@ public class Rollback {
 					Main.prefix + "Error with region command! Error: WorldEdit is null.");
 			return;
 		}
+		
+		BukkitPlayer bPlayer = BukkitAdapter.adapt(player);
+		LocalSession session = WorldEdit.getInstance().getSessionManager().get(bPlayer);
+		try {
+			Region sel = session.getSelection(bPlayer.getWorld());
+			// Checks if they have a selection
+			if (sel instanceof CuboidRegion) {
+				Vector min = sel.getMinimumPoint();
+				Vector max = sel.getMaximumPoint();
 
-		Selection sel = worldEditPlugin.getSelection(player);
-
-		// Checks if they have a selection
-		if (sel instanceof CuboidSelection) {
-			Vector min = sel.getNativeMinimumPoint();
-			Vector max = sel.getNativeMaximumPoint();
-
-			// Used to add an arena to the config for integration with SG.
-			if (addToConf) {
-				if (!Config.setArenaLocation(name, min.getBlockX(), min.getBlockY(),
-						min.getBlockZ(), player.getWorld())) {
-					// If this code gets executed, it was unable to save the
-					// YAML.
-					player.sendMessage(Main.prefix + ChatColor.DARK_RED
-							+ "Unable to add arena to config! Aborting.");
-					return;
+				// Used to add an arena to the config for integration with SG.
+				if (addToConf) {
+					if (!Config.setArenaLocation(name, min.getBlockX(), min.getBlockY(),
+							min.getBlockZ(), player.getWorld())) {
+						// If this code gets executed, it was unable to save the
+						// YAML.
+						player.sendMessage(Main.prefix + ChatColor.DARK_RED
+								+ "Unable to add arena to config! Aborting.");
+						return;
+					}
+					name = Paths.get(Main.regionsPath.toString(), name + ".dat").toString();
 				}
-				name = Paths.get(Main.regionsPath.toString(), name + ".dat").toString();
+
+				// Copies the arena (distributed).
+				// copyDistributed(min.getBlockX(), min.getBlockY(),
+				// min.getBlockZ(), max.getBlockX(), max.getBlockY(),
+				// max.getBlockZ(), player.getWorld(), name, player);
+				new Copy(min.getBlockX(), min.getBlockY(), min.getBlockZ(), max.getBlockX(),
+						max.getBlockY(), max.getBlockZ(), player.getWorld(), name, player).run();
+
+				// Notify the player it's starting at those coordinates.
+				player.sendMessage(Main.prefix + "Starting! " + min.getBlockX() + " " + min.getBlockY()
+						+ " " + min.getBlockZ());
+			} else {
+				// This means there was no selection, so it skips copying and tells
+				// the player.
+				player.sendMessage(ChatColor.DARK_RED + "Invalid Selection!");
 			}
-
-			// Copies the arena (distributed).
-			// copyDistributed(min.getBlockX(), min.getBlockY(),
-			// min.getBlockZ(), max.getBlockX(), max.getBlockY(),
-			// max.getBlockZ(), player.getWorld(), name, player);
-			new Copy(min.getBlockX(), min.getBlockY(), min.getBlockZ(), max.getBlockX(),
-					max.getBlockY(), max.getBlockZ(), player.getWorld(), name, player).run();
-
-			// Notify the player it's starting at those coordinates.
-			player.sendMessage(Main.prefix + "Starting! " + min.getBlockX() + " " + min.getBlockY()
-					+ " " + min.getBlockZ());
-		} else {
+		} catch (IncompleteRegionException e) {
 			// This means there was no selection, so it skips copying and tells
 			// the player.
 			player.sendMessage(ChatColor.DARK_RED + "Invalid Selection!");
@@ -295,14 +307,17 @@ public class Rollback {
 					Main.prefix + "Error with region command! Error: WorldEdit is null.");
 		}
 
-		Selection sel = worldEditPlugin.getSelection(player);
-
-		// Checks if the player has a selection.
-		if (sel instanceof CuboidSelection) {
-
-			// Gets the min point because that is all that is needed for pastes.
-			return sel.getNativeMinimumPoint();
-		} else {
+		BukkitPlayer bPlayer = BukkitAdapter.adapt(player);
+		LocalSession session = WorldEdit.getInstance().getSessionManager().get(bPlayer);
+		try {
+			Region sel = session.getSelection(bPlayer.getWorld());
+			// Checks if they have a selection
+			if (sel instanceof CuboidRegion) {
+				return sel.getMinimumPoint();
+			} else {
+				return null;
+			}
+		} catch (IncompleteRegionException e) {
 			return null;
 		}
 	}

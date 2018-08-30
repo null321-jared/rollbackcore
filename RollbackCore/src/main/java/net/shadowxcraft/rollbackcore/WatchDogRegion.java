@@ -48,10 +48,15 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
 
+import com.sk89q.worldedit.IncompleteRegionException;
+import com.sk89q.worldedit.LocalSession;
 import com.sk89q.worldedit.Vector;
+import com.sk89q.worldedit.WorldEdit;
+import com.sk89q.worldedit.bukkit.BukkitAdapter;
+import com.sk89q.worldedit.bukkit.BukkitPlayer;
 import com.sk89q.worldedit.bukkit.WorldEditPlugin;
-import com.sk89q.worldedit.bukkit.selections.CuboidSelection;
-import com.sk89q.worldedit.bukkit.selections.Selection;
+import com.sk89q.worldedit.regions.CuboidRegion;
+import com.sk89q.worldedit.regions.Region;
 
 import net.shadowxcraft.rollbackcore.events.EndStatus;
 import net.shadowxcraft.rollbackcore.events.WDImportEndEvent;
@@ -241,21 +246,28 @@ public class WatchDogRegion {
 			return null;
 		}
 
-		Selection sel = worldEditPlugin.getSelection(player);
-
-		// Checks if they have a selection
-		if (sel instanceof CuboidSelection) {
-			Vector min = sel.getNativeMinimumPoint();
-			Vector max = sel.getNativeMaximumPoint();
-			Location minLoc = new Location(sel.getWorld(), min.getBlockX(), min.getBlockY(),
-					min.getBlockZ());
-			Location maxLoc = new Location(sel.getWorld(), max.getBlockX(), max.getBlockY(),
-					max.getBlockZ());
-			createdWatchdog = new WatchDogRegion(minLoc, maxLoc, Main.prefix);
-			player.sendMessage(Main.prefix + "WatchDog region created!");
-		} else {
-			// This means there was no selection, so it skips copying and
-			// tells the player.
+		BukkitPlayer bPlayer = BukkitAdapter.adapt(player);
+		LocalSession session = WorldEdit.getInstance().getSessionManager().get(bPlayer);
+		try {
+			Region sel = session.getSelection(bPlayer.getWorld());
+			// Checks if they have a selection
+			if (sel instanceof CuboidRegion) {
+				Vector min = sel.getMinimumPoint();
+				Vector max = sel.getMaximumPoint();
+				Location minLoc = new Location(player.getWorld(), min.getBlockX(), min.getBlockY(),
+						min.getBlockZ());
+				Location maxLoc = new Location(player.getWorld(), max.getBlockX(), max.getBlockY(),
+						max.getBlockZ());
+				createdWatchdog = new WatchDogRegion(minLoc, maxLoc, Main.prefix);
+				player.sendMessage(Main.prefix + "WatchDog region created!");
+			} else {
+				// This means there was no selection, so it skips copying and
+				// tells the player.
+				player.sendMessage(ChatColor.DARK_RED + "Invalid Selection!");
+			}
+		} catch (IncompleteRegionException e) {
+			// This means there was no selection, so it skips copying and tells
+			// the player.
 			player.sendMessage(ChatColor.DARK_RED + "Invalid Selection!");
 		}
 
@@ -401,7 +413,7 @@ public class WatchDogRegion {
 
 					// It was absent, so writes it to the file,
 					// then increments the index.
-					
+
 					// START WITH 0 - Notes new data.
 					out.write(0);
 					// Next write whether or not there was extra data.
@@ -601,7 +613,7 @@ class ImportOperation extends BukkitRunnable {
 				// Updates its type to what it is in the backup.
 				state.setBlockData(data.data);
 
-				if(data.hasExtraData) {
+				if (data.hasExtraData) {
 					// Save to prevent it from changing anything
 					BlockState current = blockLocation.getBlock().getState();
 					// Update it to make it an instance of the correct type.
@@ -610,10 +622,10 @@ class ImportOperation extends BukkitRunnable {
 					state = blockLocation.getBlock().getState();
 					// Revert it.
 					current.update(true, false);
-					
+
 					addExtaData(data, state);
 				}
-				
+
 				// Adds it to the watchdog region.
 				exportedTo.addState(state, blockLocation);
 				blocksImported++;
@@ -627,7 +639,7 @@ class ImportOperation extends BukkitRunnable {
 		}
 
 	}
-	
+
 	private void addExtaData(BlockCache data, BlockState state) throws IOException {
 		int length = FileUtilities.readShort(in);
 		switch (data.data.getMaterial()) {
