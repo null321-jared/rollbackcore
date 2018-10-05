@@ -24,7 +24,9 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.List;
 
 import org.bukkit.Bukkit;
@@ -34,6 +36,7 @@ import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockState;
 import org.bukkit.block.Sign;
+import org.bukkit.block.Skull;
 import org.bukkit.block.data.BlockData;
 import org.bukkit.command.CommandSender;
 
@@ -55,6 +58,8 @@ public class Copy extends RollbackOperation {
 	private File file;
 	private long startTime = -1l;
 	private static final List<Copy> runningCopies = new ArrayList<Copy>();
+	private static EnumSet<Material> specialBlockStates = EnumSet.of(Material.SIGN,
+			Material.WALL_SIGN, Material.PLAYER_HEAD, Material.PLAYER_WALL_HEAD);
 	boolean inProgress = false;
 
 	// Specific to the operation at hand.
@@ -368,8 +373,7 @@ public class Copy extends RollbackOperation {
 				writeCount();
 				if (id == null) {
 					Material material = data.getMaterial();
-					id = cache.add(data,
-							material == Material.SIGN || material == Material.WALL_SIGN);
+					id = cache.add(data, specialBlockStates.contains(material));
 					// New block.
 
 					String dataAsString = data.getAsString();
@@ -415,11 +419,29 @@ public class Copy extends RollbackOperation {
 				for (int i = 1; i < 4; i++) {
 					allLines += '\n' + sign.getLine(i);
 				}
-				FileUtilities.writeShort(out, allLines.length() + 1);
-				FileUtilities.writeShortString(out, allLines);
+				byte[] bytes = allLines.getBytes(StandardCharsets.UTF_8);
+				FileUtilities.writeShort(out, bytes.length +1);
+				out.write(bytes.length); // assumed less than 256
+				out.write(bytes);
 			} catch (IndexOutOfBoundsException e) {
 				e.printStackTrace();
 				FileUtilities.writeShort(out, 0); // To prevent corruption of the output.
+			}
+			break;
+
+		case PLAYER_HEAD:
+		case PLAYER_WALL_HEAD:
+			Skull head = (Skull) blockState;
+			if (head.hasOwner()) {
+				byte[] bytes = head.getOwningPlayer().getUniqueId().toString().getBytes(StandardCharsets.UTF_8);
+				 // Plus two to account for the owner byte and the length byte
+				FileUtilities.writeShort(out, bytes.length + 2);
+				out.write(1); // 1 == has owner
+				out.write(bytes.length); // assumed less than 256 because UUIDs are of fixed length.
+				out.write(bytes);
+			} else {
+				FileUtilities.writeShort(out, 1);
+				out.write(0); // 0 == has no owner
 			}
 			break;
 		default:

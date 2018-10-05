@@ -91,7 +91,7 @@ public class FileUtilities {
 
 	public static String readShortString(InputStream in) throws IOException {
 		int length = in.read();
-		return readShortString(in, new byte[length]);
+		return readString(in, length, new byte[length]);
 	}
 
 	public static String readShortString(InputStream in, byte[] buffer) throws IOException {

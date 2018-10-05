@@ -27,6 +27,7 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.UUID;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -34,6 +35,7 @@ import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.Sign;
+import org.bukkit.block.Skull;
 import org.bukkit.block.data.BlockData;
 import org.bukkit.command.CommandSender;
 
@@ -442,6 +444,22 @@ public class Paste extends RollbackOperation {
 					sign.setLine(i, lines[i]);
 				}
 				sign.update(true, false);
+				break;
+			case PLAYER_HEAD:
+			case PLAYER_WALL_HEAD:
+				Skull skull = (Skull) block.getState();
+				if (in.read() > 0) { // Has owner
+					UUID uuid = UUID.fromString(FileUtilities.readShortString(in));
+					skull.setOwningPlayer(Bukkit.getOfflinePlayer(uuid));
+					skull.update(true, false);
+				} else {
+					if (skull.hasOwner()) {
+						// Set to steve
+						skull.setOwningPlayer(Bukkit.getOfflinePlayer(
+								UUID.fromString("8667ba71-b85a-4004-af54-457a9734eed7")));
+						skull.update(true, false);
+					}
+				}
 				break;
 			default:
 				Main.plugin.getLogger().warning(
