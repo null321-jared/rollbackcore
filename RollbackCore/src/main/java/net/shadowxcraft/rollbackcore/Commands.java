@@ -138,7 +138,7 @@ public class Commands implements CommandExecutor {
 		int lastValidArg = 0;
 		for (int i = args.length - 1; i > 0; i--) {
 			if (args[i].startsWith("-")) {
-				otherArgs.add(args[i]);
+				otherArgs.add(args[i].toLowerCase());
 			} else {
 				lastValidArg = i;
 				break;
