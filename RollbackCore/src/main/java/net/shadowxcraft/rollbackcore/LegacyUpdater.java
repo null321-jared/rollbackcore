@@ -15,7 +15,6 @@ import java.util.Arrays;
 import java.util.Set;
 
 import org.bukkit.Bukkit;
-import org.bukkit.Material;
 import org.bukkit.block.data.BlockData;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.InvalidConfigurationException;
