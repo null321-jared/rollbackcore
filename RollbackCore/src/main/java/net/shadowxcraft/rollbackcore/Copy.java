@@ -35,6 +35,7 @@ import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockState;
+import org.bukkit.block.CommandBlock;
 import org.bukkit.block.Sign;
 import org.bukkit.block.Skull;
 import org.bukkit.block.data.BlockData;
@@ -58,8 +59,9 @@ public class Copy extends RollbackOperation {
 	private File file;
 	private long startTime = -1l;
 	private static final List<Copy> runningCopies = new ArrayList<Copy>();
-	private static EnumSet<Material> specialBlockStates = EnumSet.of(Material.SIGN,
-			Material.WALL_SIGN, Material.PLAYER_HEAD, Material.PLAYER_WALL_HEAD);
+	private static EnumSet<Material> specialBlockStates = EnumSet.of(Material.SIGN, Material.WALL_SIGN,
+			Material.PLAYER_HEAD, Material.PLAYER_WALL_HEAD, Material.COMMAND_BLOCK, Material.CHAIN_COMMAND_BLOCK,
+			Material.REPEATING_COMMAND_BLOCK);
 	boolean inProgress = false;
 
 	// Specific to the operation at hand.
@@ -88,10 +90,10 @@ public class Copy extends RollbackOperation {
 	 * @param sender   Where status messages will be sent. Null for no messages,
 	 *                 consoleSender for console, and a player for a player.
 	 */
-	public Copy(int minX, int minY, int minZ, int maxX, int maxY, int maxZ, World world,
-			String fileName, CommandSender sender) {
-		this(new Location(world, minX, minY, minZ), new Location(world, maxX, maxY, maxZ), fileName,
-				sender, Main.prefix);
+	public Copy(int minX, int minY, int minZ, int maxX, int maxY, int maxZ, World world, String fileName,
+			CommandSender sender) {
+		this(new Location(world, minX, minY, minZ), new Location(world, maxX, maxY, maxZ), fileName, sender,
+				Main.prefix);
 	}
 
 	/**
@@ -270,8 +272,8 @@ public class Copy extends RollbackOperation {
 		switch (Config.compressionType) {
 		default:
 		case LZ4:
-			out = new BufferedOutputStream(new LZ4BlockOutputStream(out, 1 << 16,
-					LZ4Factory.safeInstance().highCompressor()));
+			out = new BufferedOutputStream(
+					new LZ4BlockOutputStream(out, 1 << 16, LZ4Factory.safeInstance().highCompressor()));
 			break;
 		case NONE:
 			out = new BufferedOutputStream(out);
@@ -420,7 +422,7 @@ public class Copy extends RollbackOperation {
 					allLines += '\n' + sign.getLine(i);
 				}
 				byte[] bytes = allLines.getBytes(StandardCharsets.UTF_8);
-				FileUtilities.writeShort(out, bytes.length +1);
+				FileUtilities.writeShort(out, bytes.length + 1);
 				out.write(bytes.length); // assumed less than 256
 				out.write(bytes);
 			} catch (IndexOutOfBoundsException e) {
@@ -434,7 +436,7 @@ public class Copy extends RollbackOperation {
 			Skull head = (Skull) blockState;
 			if (head.hasOwner()) {
 				byte[] bytes = head.getOwningPlayer().getUniqueId().toString().getBytes(StandardCharsets.UTF_8);
-				 // Plus two to account for the owner byte and the length byte
+				// Plus two to account for the owner byte and the length byte
 				FileUtilities.writeShort(out, bytes.length + 2);
 				out.write(1); // 1 == has owner
 				out.write(bytes.length); // assumed less than 256 because UUIDs are of fixed length.
@@ -443,6 +445,20 @@ public class Copy extends RollbackOperation {
 				FileUtilities.writeShort(out, 1);
 				out.write(0); // 0 == has no owner
 			}
+			break;
+		case COMMAND_BLOCK:
+		case CHAIN_COMMAND_BLOCK:
+		case REPEATING_COMMAND_BLOCK:
+			CommandBlock cBlock = (CommandBlock) blockState;
+			byte[] nameBytes = cBlock.getName().getBytes(StandardCharsets.UTF_8);
+
+			byte[] commandBytes = cBlock.getCommand().getBytes(StandardCharsets.UTF_8);
+
+			FileUtilities.writeShort(out, nameBytes.length + commandBytes.length + 4);
+			FileUtilities.writeShort(out, nameBytes.length);
+			out.write(nameBytes);
+			FileUtilities.writeShort(out, commandBytes.length);
+			out.write(commandBytes);
 			break;
 		default:
 			Main.plugin.getLogger().warning("Code requested writing of unknown blockstate!");

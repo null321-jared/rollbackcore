@@ -34,7 +34,7 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.command.ConsoleCommandSender;
 import org.bukkit.entity.Player;
 
-import com.sk89q.worldedit.math.BlockVector3;
+import com.sk89q.worldedit.Vector;
 
 /**
  * @author lizardfreak321
@@ -186,7 +186,7 @@ public class Commands implements CommandExecutor {
 				}
 			} else { // lastValidArg == 1
 				if (sender instanceof Player) {
-					BlockVector3 minVector = Rollback.getSelectionMin((Player) sender);
+					Vector minVector = Rollback.getSelectionMin((Player) sender);
 					if (minVector != null) {
 						min = new Location(((Player) sender).getWorld(), minVector.getX(),
 								minVector.getY(), minVector.getZ());

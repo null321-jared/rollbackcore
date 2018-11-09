@@ -34,6 +34,7 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
+import org.bukkit.block.CommandBlock;
 import org.bukkit.block.Sign;
 import org.bukkit.block.Skull;
 import org.bukkit.block.data.BlockData;
@@ -99,8 +100,7 @@ public class Paste extends RollbackOperation {
 	 * @param sender   The person who will get status messages. Use null for no
 	 *                 messages, and consoleSender for console.
 	 */
-	public Paste(int x, int y, int z, World world, String fileName, ArrayList<Paste> pastes,
-			CommandSender sender) {
+	public Paste(int x, int y, int z, World world, String fileName, ArrayList<Paste> pastes, CommandSender sender) {
 		this(new Location(world, x, y, z), fileName, sender, false, false, Main.prefix);
 		this.pastes = pastes;
 	}
@@ -122,8 +122,8 @@ public class Paste extends RollbackOperation {
 	 * @param ignoreAir     Not check blocks that are air in the file. May be useful
 	 *                      for some plugins.
 	 */
-	public Paste(Location min, String fileName, CommandSender sender, boolean clearEntities,
-			boolean ignoreAir, String prefix) {
+	public Paste(Location min, String fileName, CommandSender sender, boolean clearEntities, boolean ignoreAir,
+			String prefix) {
 		super(min, true);
 
 		this.originalWorldSaveSetting = min.getWorld().isAutoSave();
@@ -167,8 +167,8 @@ public class Paste extends RollbackOperation {
 		lastTime = startTime;
 		// Checks if there are any currently running pastes of the exact same thing.
 		for (Paste runningPaste : runningPastes) {
-			if (runningPaste.fileName.equals(fileName) && runningPaste.minX == minX
-					&& runningPaste.minY == minY && runningPaste.minZ == minZ) {
+			if (runningPaste.fileName.equals(fileName) && runningPaste.minX == minX && runningPaste.minY == minY
+					&& runningPaste.minZ == minZ) {
 				end(EndStatus.FAIL_DUPLICATE);
 				return false;
 			}
@@ -183,8 +183,8 @@ public class Paste extends RollbackOperation {
 		}
 
 		if (clearEntities) {
-			new ClearEntities(new Location(world, minX, minY, minZ),
-					new Location(world, maxX, maxY, maxZ), null, false).progressiveClearEntities();
+			new ClearEntities(new Location(world, minX, minY, minZ), new Location(world, maxX, maxY, maxZ), null, false)
+					.progressiveClearEntities();
 		}
 
 		runningPastes.add(this);
@@ -265,14 +265,14 @@ public class Paste extends RollbackOperation {
 				case "minecraft_version":
 					String version = FileUtilities.readString(in, valueLength, bytes);
 					if (!version.equalsIgnoreCase(mcVersion)) {
-						Main.plugin.getLogger().warning("File was written in MC version " + version
-								+ ", but you are running " + mcVersion);
+						Main.plugin.getLogger().warning(
+								"File was written in MC version " + version + ", but you are running " + mcVersion);
 					}
 					break;
 				default:
 					in.skip(valueLength); // Don't assume it's a string.
-					Main.plugin.getLogger().warning("File being read has an unknown key \"" + key
-							+ "\". Was it written with another program?");
+					Main.plugin.getLogger().warning(
+							"File being read has an unknown key \"" + key + "\". Was it written with another program?");
 				}
 			}
 
@@ -394,8 +394,7 @@ public class Paste extends RollbackOperation {
 					String blockDataString = FileUtilities.readShortString(in, bytes);
 					// Reads the new ID
 					id = in.read();
-					lastData = new BlockCache(id, hasExtraData,
-							Bukkit.createBlockData(blockDataString));
+					lastData = new BlockCache(id, hasExtraData, Bukkit.createBlockData(blockDataString));
 					dataCache.put(id, lastData);
 
 				} else {
@@ -455,11 +454,28 @@ public class Paste extends RollbackOperation {
 				} else {
 					if (skull.hasOwner()) {
 						// Set to steve
-						skull.setOwningPlayer(Bukkit.getOfflinePlayer(
-								UUID.fromString("8667ba71-b85a-4004-af54-457a9734eed7")));
+						skull.setOwningPlayer(
+								Bukkit.getOfflinePlayer(UUID.fromString("8667ba71-b85a-4004-af54-457a9734eed7")));
 						skull.update(true, false);
 					}
 				}
+				break;
+			case COMMAND_BLOCK:
+			case CHAIN_COMMAND_BLOCK:
+			case REPEATING_COMMAND_BLOCK:
+				CommandBlock cBlock = (CommandBlock) block.getState();
+
+				int nameLength = FileUtilities.readShort(in);
+				String name = FileUtilities.readString(in, nameLength);
+				int commandLength = FileUtilities.readShort(in);
+				String command = FileUtilities.readString(in, commandLength);
+
+				if (cBlock.getName() != name || cBlock.getCommand() != command) {
+					cBlock.setName(name);
+					cBlock.setCommand(command);
+					cBlock.update();
+				}
+
 				break;
 			default:
 				Main.plugin.getLogger().warning(

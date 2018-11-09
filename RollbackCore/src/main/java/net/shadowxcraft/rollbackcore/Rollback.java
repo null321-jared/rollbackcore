@@ -36,11 +36,11 @@ import org.bukkit.entity.Player;
 
 import com.sk89q.worldedit.IncompleteRegionException;
 import com.sk89q.worldedit.LocalSession;
+import com.sk89q.worldedit.Vector;
 import com.sk89q.worldedit.WorldEdit;
 import com.sk89q.worldedit.bukkit.BukkitAdapter;
 import com.sk89q.worldedit.bukkit.BukkitPlayer;
 import com.sk89q.worldedit.bukkit.WorldEditPlugin;
-import com.sk89q.worldedit.math.BlockVector3;
 import com.sk89q.worldedit.regions.CuboidRegion;
 import com.sk89q.worldedit.regions.Region;
 
@@ -86,8 +86,8 @@ public class Rollback {
 			Region sel = session.getSelection(bPlayer.getWorld());
 			// Checks if they have a selection
 			if (sel instanceof CuboidRegion) {
-				BlockVector3 min = sel.getMinimumPoint();
-				BlockVector3 max = sel.getMaximumPoint();
+				Vector min = sel.getMinimumPoint();
+				Vector max = sel.getMaximumPoint();
 
 				// Used to add an arena to the config for integration with SG.
 				if (addToConf) {
@@ -281,7 +281,7 @@ public class Rollback {
 	 * @param name   The file/folder directory that will get pasted.
 	 */
 	public static final void paste(Player player, String name) {
-		BlockVector3 min = getSelectionMin(player);
+		Vector min = getSelectionMin(player);
 		if (min != null) {
 			// Pastes it at those coordinates.
 			// Shows on console for debug and notification purposes.
@@ -297,7 +297,7 @@ public class Rollback {
 
 	}
 
-	static final BlockVector3 getSelectionMin(Player player) {
+	static final Vector getSelectionMin(Player player) {
 		// Uses worldedit to get the player's region.
 		WorldEditPlugin worldEditPlugin = null;
 		worldEditPlugin = (WorldEditPlugin) Bukkit.getServer().getPluginManager()

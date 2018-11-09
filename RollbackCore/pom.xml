@@ -19,17 +19,16 @@
 			<id>central</id>
 			<url>http://central.maven.org/maven2</url>
 		</repository>
-		<repository>
+		<!-- <repository>
 			<id>sk89q-snapshots</id>
 			<url>http://maven.sk89q.com/artifactory/repo</url>
 			<releases>
-				<enabled>true</enabled> <!-- releases enabled: this specific repository also hosts release versions -->
+				<enabled>true</enabled>
 			</releases>
 			<snapshots>
-				<enabled>true</enabled> <!-- snapshots enabled: we declare a SNAPSHOT repository because we need 
-					to download a SNAPSHOT dependency -->
+				<enabled>true</enabled>
 			</snapshots>
-		</repository>
+		</repository>-->
 		<repository>
 		  <id>jitpack.io</id>
 		  <url>https://jitpack.io</url>
@@ -51,11 +50,11 @@
 			<scope>provided</scope>
 		</dependency>
 		<!-- Worldedit -->
-		<dependency>
+		<!-- <dependency>
 			<groupId>com.sk89q.worldedit</groupId>
 			<artifactId>worldedit-bukkit</artifactId>
 			<version>7.0.0-SNAPSHOT</version>
-		</dependency>
+		</dependency>-->
 		<!-- https://mvnrepository.com/artifact/org.lz4/lz4-java -->
 		<dependency>
 			<groupId>org.lz4</groupId>
@@ -113,5 +112,5 @@
 			</plugin>
 		</plugins>
 	</build>
-	<version>3.2.1-BETA</version>
+	<version>3.3.0-BETA</version>
 </project>

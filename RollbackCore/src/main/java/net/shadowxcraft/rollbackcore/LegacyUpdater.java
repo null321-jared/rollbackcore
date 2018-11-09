@@ -10,6 +10,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.Reader;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Set;
 
@@ -45,13 +46,11 @@ public class LegacyUpdater {
 
 						try {
 							for (String dataKey : dataKeys) {
-								data[Integer.parseInt(dataKey)] = Bukkit
-										.createBlockData(section.getString(dataKey));
+								data[Integer.parseInt(dataKey)] = Bukkit.createBlockData(section.getString(dataKey));
 							}
 							idMappings[Integer.parseInt(idKey)] = data;
 						} catch (ArrayIndexOutOfBoundsException e) {
-							plugin.getLogger().warning(
-									"Index issue loading indexes " + dataKeys + " of ID " + idKey);
+							plugin.getLogger().warning("Index issue loading indexes " + dataKeys + " of ID " + idKey);
 						}
 					}
 					plugin.getLogger().info("Loaded legacy mappings.");
@@ -68,11 +67,10 @@ public class LegacyUpdater {
 	 * 1 for backwards compatibility. It is updated to Minecraft 1.9 with some
 	 * missing blocks. Must be sorted.
 	 */
-	final static int[] version1Blocks = { 0, 2, 4, 7, 13, 14, 15, 16, 20, 21, 22, 23, 30, 37, 39,
-			40, 41, 42, 45, 46, 47, 48, 49, 51, 52, 56, 57, 58, 70, 72, 73, 74, 79, 80, 81, 82, 83,
-			84, 87, 88, 89, 101, 102, 103, 112, 113, 116, 117, 118, 121, 122, 123, 124, 129, 133,
-			137, 138, 147, 148, 152, 153, 165, 166, 169, 172, 173, 174, 188, 189, 190, 191, 192,
-			201, 202, 206 };
+	final static int[] version1Blocks = { 0, 2, 4, 7, 13, 14, 15, 16, 20, 21, 22, 23, 30, 37, 39, 40, 41, 42, 45, 46,
+			47, 48, 49, 51, 52, 56, 57, 58, 70, 72, 73, 74, 79, 80, 81, 82, 83, 84, 87, 88, 89, 101, 102, 103, 112, 113,
+			116, 117, 118, 121, 122, 123, 124, 129, 133, 137, 138, 147, 148, 152, 153, 165, 166, 169, 172, 173, 174,
+			188, 189, 190, 191, 192, 201, 202, 206 };
 
 	/**
 	 * List of blocks that the plugin will skip in the newest version of the plugin.
@@ -80,11 +78,12 @@ public class LegacyUpdater {
 	 * 
 	 * @since 2.0
 	 */
-	final static int[] latestSimpleBlocks = { 0, 2, 4, 7, 13, 14, 15, 16, 20, 21, 22, 23, 30, 37,
-			39, 40, 41, 42, 45, 47, 48, 49, 51, 52, 56, 57, 58, 70, 72, 73, 74, 79, 80, 81, 82, 83,
-			84, 87, 88, 89, 101, 102, 103, 112, 113, 116, 117, 118, 121, 122, 123, 124, 129, 133,
-			137, 138, 147, 148, 152, 153, 165, 166, 169, 172, 173, 174, 188, 189, 190, 191, 192,
-			201, 202, 206, 208, 209, 213, 214, 215 };
+	final static int[] latestSimpleBlocks = { 0, 2, 4, 7, 13, 14, 15, 16, 20, 21, 22, 23, 30, 37, 39, 40, 41, 42, 45,
+			47, 48, 49, 51, 52, 56, 57, 58, 70, 72, 73, 74, 79, 80, 81, 82, 83, 84, 87, 88, 89, 101, 102, 103, 112, 113,
+			116, 117, 118, 121, 122, 123, 124, 129, 133, 137, 138, 147, 148, 152, 153, 165, 166, 169, 172, 173, 174,
+			188, 189, 190, 191, 192, 201, 202, 206, 208, 209, 213, 214, 215 };
+
+	static final int[] commandBlockIDs = { 137, 210, 211 };
 
 	/**
 	 * This method returns if the block is "simple", meaning its data value doesn't
@@ -100,57 +99,47 @@ public class LegacyUpdater {
 		return Arrays.binarySearch(simpleBlocks, id) >= 0;
 	}
 
-	public static final String[] legacyMaterialNames = new String[] { "AIR", "STONE", "GRASS",
-			"DIRT", "COBBLESTONE", "WOOD", "SAPLING", "BEDROCK", "WATER", "STATIONARY_WATER",
-			"LAVA", "STATIONARY_LAVA", "SAND", "GRAVEL", "GOLD_ORE", "IRON_ORE", "COAL_ORE", "LOG",
-			"LEAVES", "SPONGE", "GLASS", "LAPIS_ORE", "LAPIS_BLOCK", "DISPENSER", "SANDSTONE",
-			"NOTE_BLOCK", "BED_BLOCK", "POWERED_RAIL", "DETECTOR_RAIL", "PISTON_STICKY_BASE", "WEB",
-			"LONG_GRASS", "DEAD_BUSH", "PISTON_BASE", "PISTON_EXTENSION", "WOOL",
-			"PISTON_MOVING_PIECE", "YELLOW_FLOWER", "RED_ROSE", "BROWN_MUSHROOM", "RED_MUSHROOM",
-			"GOLD_BLOCK", "IRON_BLOCK", "DOUBLE_STEP", "STEP", "BRICK", "TNT", "BOOKSHELF",
-			"MOSSY_COBBLESTONE", "OBSIDIAN", "TORCH", "FIRE", "MOB_SPAWNER", "WOOD_STAIRS", "CHEST",
-			"REDSTONE_WIRE", "DIAMOND_ORE", "DIAMOND_BLOCK", "WORKBENCH", "CROPS", "SOIL",
-			"FURNACE", "BURNING_FURNACE", "SIGN_POST", "WOODEN_DOOR", "LADDER", "RAILS",
-			"COBBLESTONE_STAIRS", "WALL_SIGN", "LEVER", "STONE_PLATE", "IRON_DOOR_BLOCK",
-			"WOOD_PLATE", "REDSTONE_ORE", "GLOWING_REDSTONE_ORE", "REDSTONE_TORCH_OFF",
-			"REDSTONE_TORCH_ON", "STONE_BUTTON", "SNOW", "ICE", "SNOW_BLOCK", "CACTUS", "CLAY",
-			"SUGAR_CANE_BLOCK", "JUKEBOX", "FENCE", "PUMPKIN", "NETHERRACK", "SOUL_SAND",
-			"GLOWSTONE", "PORTAL", "JACK_O_LANTERN", "CAKE_BLOCK", "DIODE_BLOCK_OFF",
-			"DIODE_BLOCK_ON", "STAINED_GLASS", "TRAP_DOOR", "MONSTER_EGGS", "SMOOTH_BRICK",
-			"HUGE_MUSHROOM_1", "HUGE_MUSHROOM_2", "IRON_FENCE", "THIN_GLASS", "MELON_BLOCK",
-			"PUMPKIN_STEM", "MELON_STEM", "VINE", "FENCE_GATE", "BRICK_STAIRS", "SMOOTH_STAIRS",
-			"MYCEL", "WATER_LILY", "NETHER_BRICK", "NETHER_FENCE", "NETHER_BRICK_STAIRS",
-			"NETHER_WARTS", "ENCHANTMENT_TABLE", "BREWING_STAND", "CAULDRON", "ENDER_PORTAL",
-			"ENDER_PORTAL_FRAME", "ENDER_STONE", "DRAGON_EGG", "REDSTONE_LAMP_OFF",
-			"REDSTONE_LAMP_ON", "WOOD_DOUBLE_STEP", "WOOD_STEP", "COCOA", "SANDSTONE_STAIRS",
-			"EMERALD_ORE", "ENDER_CHEST", "TRIPWIRE_HOOK", "TRIPWIRE", "EMERALD_BLOCK",
-			"SPRUCE_WOOD_STAIRS", "BIRCH_WOOD_STAIRS", "JUNGLE_WOOD_STAIRS", "COMMAND", "BEACON",
-			"COBBLE_WALL", "FLOWER_POT", "CARROT", "POTATO", "WOOD_BUTTON", "SKULL", "ANVIL",
-			"TRAPPED_CHEST", "GOLD_PLATE", "IRON_PLATE", "REDSTONE_COMPARATOR_OFF",
-			"REDSTONE_COMPARATOR_ON", "DAYLIGHT_DETECTOR", "REDSTONE_BLOCK", "QUARTZ_ORE", "HOPPER",
-			"QUARTZ_BLOCK", "QUARTZ_STAIRS", "ACTIVATOR_RAIL", "DROPPER", "STAINED_CLAY",
-			"STAINED_GLASS_PANE", "LEAVES_2", "LOG_2", "ACACIA_STAIRS", "DARK_OAK_STAIRS",
-			"SLIME_BLOCK", "BARRIER", "IRON_TRAPDOOR", "PRISMARINE", "SEA_LANTERN", "HAY_BLOCK",
-			"CARPET", "HARD_CLAY", "COAL_BLOCK", "PACKED_ICE", "DOUBLE_PLANT", "STANDING_BANNER",
-			"WALL_BANNER", "DAYLIGHT_DETECTOR_INVERTED", "RED_SANDSTONE", "RED_SANDSTONE_STAIRS",
-			"DOUBLE_STONE_SLAB2", "STONE_SLAB2", "SPRUCE_FENCE_GATE", "BIRCH_FENCE_GATE",
-			"JUNGLE_FENCE_GATE", "DARK_OAK_FENCE_GATE", "ACACIA_FENCE_GATE", "SPRUCE_FENCE",
-			"BIRCH_FENCE", "JUNGLE_FENCE", "DARK_OAK_FENCE", "ACACIA_FENCE", "SPRUCE_DOOR",
-			"BIRCH_DOOR", "JUNGLE_DOOR", "ACACIA_DOOR", "DARK_OAK_DOOR", "END_ROD", "CHORUS_PLANT",
-			"CHORUS_FLOWER", "PURPUR_BLOCK", "PURPUR_PILLAR", "PURPUR_STAIRS", "PURPUR_DOUBLE_SLAB",
-			"PURPUR_SLAB", "END_BRICKS", "BEETROOT_BLOCK", "GRASS_PATH", "END_GATEWAY",
-			"COMMAND_REPEATING", "COMMAND_CHAIN", "FROSTED_ICE", "MAGMA", "NETHER_WART_BLOCK",
-			"RED_NETHER_BRICK", "BONE_BLOCK", "STRUCTURE_VOID", "OBSERVER", "WHITE_SHULKER_BOX",
-			"ORANGE_SHULKER_BOX", "MAGENTA_SHULKER_BOX", "LIGHT_BLUE_SHULKER_BOX",
-			"YELLOW_SHULKER_BOX", "LIME_SHULKER_BOX", "PINK_SHULKER_BOX", "GRAY_SHULKER_BOX",
-			"SILVER_SHULKER_BOX", "CYAN_SHULKER_BOX", "PURPLE_SHULKER_BOX", "BLUE_SHULKER_BOX",
-			"BROWN_SHULKER_BOX", "GREEN_SHULKER_BOX", "RED_SHULKER_BOX", "BLACK_SHULKER_BOX",
+	public static final String[] legacyMaterialNames = new String[] { "AIR", "STONE", "GRASS", "DIRT", "COBBLESTONE",
+			"WOOD", "SAPLING", "BEDROCK", "WATER", "STATIONARY_WATER", "LAVA", "STATIONARY_LAVA", "SAND", "GRAVEL",
+			"GOLD_ORE", "IRON_ORE", "COAL_ORE", "LOG", "LEAVES", "SPONGE", "GLASS", "LAPIS_ORE", "LAPIS_BLOCK",
+			"DISPENSER", "SANDSTONE", "NOTE_BLOCK", "BED_BLOCK", "POWERED_RAIL", "DETECTOR_RAIL", "PISTON_STICKY_BASE",
+			"WEB", "LONG_GRASS", "DEAD_BUSH", "PISTON_BASE", "PISTON_EXTENSION", "WOOL", "PISTON_MOVING_PIECE",
+			"YELLOW_FLOWER", "RED_ROSE", "BROWN_MUSHROOM", "RED_MUSHROOM", "GOLD_BLOCK", "IRON_BLOCK", "DOUBLE_STEP",
+			"STEP", "BRICK", "TNT", "BOOKSHELF", "MOSSY_COBBLESTONE", "OBSIDIAN", "TORCH", "FIRE", "MOB_SPAWNER",
+			"WOOD_STAIRS", "CHEST", "REDSTONE_WIRE", "DIAMOND_ORE", "DIAMOND_BLOCK", "WORKBENCH", "CROPS", "SOIL",
+			"FURNACE", "BURNING_FURNACE", "SIGN_POST", "WOODEN_DOOR", "LADDER", "RAILS", "COBBLESTONE_STAIRS",
+			"WALL_SIGN", "LEVER", "STONE_PLATE", "IRON_DOOR_BLOCK", "WOOD_PLATE", "REDSTONE_ORE",
+			"GLOWING_REDSTONE_ORE", "REDSTONE_TORCH_OFF", "REDSTONE_TORCH_ON", "STONE_BUTTON", "SNOW", "ICE",
+			"SNOW_BLOCK", "CACTUS", "CLAY", "SUGAR_CANE_BLOCK", "JUKEBOX", "FENCE", "PUMPKIN", "NETHERRACK",
+			"SOUL_SAND", "GLOWSTONE", "PORTAL", "JACK_O_LANTERN", "CAKE_BLOCK", "DIODE_BLOCK_OFF", "DIODE_BLOCK_ON",
+			"STAINED_GLASS", "TRAP_DOOR", "MONSTER_EGGS", "SMOOTH_BRICK", "HUGE_MUSHROOM_1", "HUGE_MUSHROOM_2",
+			"IRON_FENCE", "THIN_GLASS", "MELON_BLOCK", "PUMPKIN_STEM", "MELON_STEM", "VINE", "FENCE_GATE",
+			"BRICK_STAIRS", "SMOOTH_STAIRS", "MYCEL", "WATER_LILY", "NETHER_BRICK", "NETHER_FENCE",
+			"NETHER_BRICK_STAIRS", "NETHER_WARTS", "ENCHANTMENT_TABLE", "BREWING_STAND", "CAULDRON", "ENDER_PORTAL",
+			"ENDER_PORTAL_FRAME", "ENDER_STONE", "DRAGON_EGG", "REDSTONE_LAMP_OFF", "REDSTONE_LAMP_ON",
+			"WOOD_DOUBLE_STEP", "WOOD_STEP", "COCOA", "SANDSTONE_STAIRS", "EMERALD_ORE", "ENDER_CHEST", "TRIPWIRE_HOOK",
+			"TRIPWIRE", "EMERALD_BLOCK", "SPRUCE_WOOD_STAIRS", "BIRCH_WOOD_STAIRS", "JUNGLE_WOOD_STAIRS", "COMMAND",
+			"BEACON", "COBBLE_WALL", "FLOWER_POT", "CARROT", "POTATO", "WOOD_BUTTON", "SKULL", "ANVIL", "TRAPPED_CHEST",
+			"GOLD_PLATE", "IRON_PLATE", "REDSTONE_COMPARATOR_OFF", "REDSTONE_COMPARATOR_ON", "DAYLIGHT_DETECTOR",
+			"REDSTONE_BLOCK", "QUARTZ_ORE", "HOPPER", "QUARTZ_BLOCK", "QUARTZ_STAIRS", "ACTIVATOR_RAIL", "DROPPER",
+			"STAINED_CLAY", "STAINED_GLASS_PANE", "LEAVES_2", "LOG_2", "ACACIA_STAIRS", "DARK_OAK_STAIRS",
+			"SLIME_BLOCK", "BARRIER", "IRON_TRAPDOOR", "PRISMARINE", "SEA_LANTERN", "HAY_BLOCK", "CARPET", "HARD_CLAY",
+			"COAL_BLOCK", "PACKED_ICE", "DOUBLE_PLANT", "STANDING_BANNER", "WALL_BANNER", "DAYLIGHT_DETECTOR_INVERTED",
+			"RED_SANDSTONE", "RED_SANDSTONE_STAIRS", "DOUBLE_STONE_SLAB2", "STONE_SLAB2", "SPRUCE_FENCE_GATE",
+			"BIRCH_FENCE_GATE", "JUNGLE_FENCE_GATE", "DARK_OAK_FENCE_GATE", "ACACIA_FENCE_GATE", "SPRUCE_FENCE",
+			"BIRCH_FENCE", "JUNGLE_FENCE", "DARK_OAK_FENCE", "ACACIA_FENCE", "SPRUCE_DOOR", "BIRCH_DOOR", "JUNGLE_DOOR",
+			"ACACIA_DOOR", "DARK_OAK_DOOR", "END_ROD", "CHORUS_PLANT", "CHORUS_FLOWER", "PURPUR_BLOCK", "PURPUR_PILLAR",
+			"PURPUR_STAIRS", "PURPUR_DOUBLE_SLAB", "PURPUR_SLAB", "END_BRICKS", "BEETROOT_BLOCK", "GRASS_PATH",
+			"END_GATEWAY", "COMMAND_REPEATING", "COMMAND_CHAIN", "FROSTED_ICE", "MAGMA", "NETHER_WART_BLOCK",
+			"RED_NETHER_BRICK", "BONE_BLOCK", "STRUCTURE_VOID", "OBSERVER", "WHITE_SHULKER_BOX", "ORANGE_SHULKER_BOX",
+			"MAGENTA_SHULKER_BOX", "LIGHT_BLUE_SHULKER_BOX", "YELLOW_SHULKER_BOX", "LIME_SHULKER_BOX",
+			"PINK_SHULKER_BOX", "GRAY_SHULKER_BOX", "SILVER_SHULKER_BOX", "CYAN_SHULKER_BOX", "PURPLE_SHULKER_BOX",
+			"BLUE_SHULKER_BOX", "BROWN_SHULKER_BOX", "GREEN_SHULKER_BOX", "RED_SHULKER_BOX", "BLACK_SHULKER_BOX",
 			"WHITE_GLAZED_TERRACOTTA", "ORANGE_GLAZED_TERRACOTTA", "MAGENTA_GLAZED_TERRACOTTA",
 			"LIGHT_BLUE_GLAZED_TERRACOTTA", "YELLOW_GLAZED_TERRACOTTA", "LIME_GLAZED_TERRACOTTA",
-			"PINK_GLAZED_TERRACOTTA", "GRAY_GLAZED_TERRACOTTA", "SILVER_GLAZED_TERRACOTTA",
-			"CYAN_GLAZED_TERRACOTTA", "PURPLE_GLAZED_TERRACOTTA", "BLUE_GLAZED_TERRACOTTA",
-			"BROWN_GLAZED_TERRACOTTA", "GREEN_GLAZED_TERRACOTTA", "RED_GLAZED_TERRACOTTA",
-			"BLACK_GLAZED_TERRACOTTA", "CONCRETE", "CONCRETE_POWDER", "STRUCTURE_BLOCK" };
+			"PINK_GLAZED_TERRACOTTA", "GRAY_GLAZED_TERRACOTTA", "SILVER_GLAZED_TERRACOTTA", "CYAN_GLAZED_TERRACOTTA",
+			"PURPLE_GLAZED_TERRACOTTA", "BLUE_GLAZED_TERRACOTTA", "BROWN_GLAZED_TERRACOTTA", "GREEN_GLAZED_TERRACOTTA",
+			"RED_GLAZED_TERRACOTTA", "BLACK_GLAZED_TERRACOTTA", "CONCRETE", "CONCRETE_POWDER", "STRUCTURE_BLOCK" };
 
 	/**
 	 * Asynchronously converts the old file to 1.13.
@@ -178,35 +167,31 @@ public class LegacyUpdater {
 					out.close();
 					if (renameFiles()) {
 						if (pasteToStart != null) {
-							Main.plugin.getServer().getScheduler().runTaskLater(Main.plugin,
-									pasteToStart, 1);
+							Main.plugin.getServer().getScheduler().runTaskLater(Main.plugin, pasteToStart, 1);
 							if (pasteToStart.sender != null)
-								pasteToStart.sender.sendMessage(pasteToStart.prefix
-										+ "Converted sucessfully! Starting paste.");
+								pasteToStart.sender
+										.sendMessage(pasteToStart.prefix + "Converted sucessfully! Starting paste.");
 
 						}
 					} else {
-						Main.plugin.getLogger()
-								.warning("Unable to rename the files after conversion. Aborting.");
+						Main.plugin.getLogger().warning("Unable to rename the files after conversion. Aborting.");
 						if (pasteToStart != null) {
 							pasteToStart.end(EndStatus.FAIL_IO_ERROR);
 							if (pasteToStart.sender != null)
-								pasteToStart.sender.sendMessage(pasteToStart.prefix
-										+ "Unable to rename the files after conversion. Aborting.");
+								pasteToStart.sender.sendMessage(
+										pasteToStart.prefix + "Unable to rename the files after conversion. Aborting.");
 						}
 					}
 				} catch (FileNotFoundException e) {
 					if (pasteToStart != null)
 						pasteToStart.end(EndStatus.FAIL_NO_SUCH_FILE);
 					e.printStackTrace();
-					Main.plugin.getLogger()
-							.warning("Failed when converting the copied region " + fileName);
+					Main.plugin.getLogger().warning("Failed when converting the copied region " + fileName);
 				} catch (IOException e) {
 					if (pasteToStart != null)
 						pasteToStart.end(EndStatus.FAIL_IO_ERROR);
 					e.printStackTrace();
-					Main.plugin.getLogger()
-							.warning("Failed when converting the copied region " + fileName);
+					Main.plugin.getLogger().warning("Failed when converting the copied region " + fileName);
 				}
 			}
 
@@ -302,11 +287,9 @@ public class LegacyUpdater {
 							if (currentId == 175) {
 								for (int diff = 0; diff < compressCount; diff++) {
 									if (currentData < 8) {
-										flowerData[(position + lastCount + diff)
-												% (diffZ + 1)] = currentData;
+										flowerData[(position + lastCount + diff) % (diffZ + 1)] = currentData;
 									} else {
-										currentData = flowerData[(position + lastCount + diff)
-												% (diffZ + 1)] + 8;
+										currentData = flowerData[(position + lastCount + diff) % (diffZ + 1)] + 8;
 									}
 								}
 							}
@@ -324,6 +307,8 @@ public class LegacyUpdater {
 							// text.
 							if (compressCount == 0) {
 								lines = getLines();
+							} else {
+								lines = null;
 							}
 						}
 					}
@@ -332,16 +317,14 @@ public class LegacyUpdater {
 						lastData = data;
 						lastLines = lines;
 						lastCount += compressCount;
-					} else if (data == null || !data.equals(lastData) || lastCount > 65280
-							|| lastCount == 0) {
-						position += lastCount;
+					} else if (data == null || !data.equals(lastData) || lastCount > 65280 || lastCount == 0) {
+						position += lastCount == 0 ? 1 : lastCount;
 
 						// Write the old IDs to file.
 						LRUBlockDataCache.Node id = cache.get(lastData);
 						if (id == null) {
-							Material material = lastData.getMaterial();
-							id = cache.add(lastData,
-									material == Material.SIGN || material == Material.WALL_SIGN);
+							//Material material = lastData.getMaterial();
+							id = cache.add(lastData, lastCount == 0);
 							// New block.
 
 							String dataAsString = lastData.getAsString();
@@ -361,18 +344,53 @@ public class LegacyUpdater {
 							out.write(id.value); // Now writes the index.
 						}
 						if (id.hasExtraData) {
-							try {
-								// Just signs
-								String allLines = lastLines[0];
-								for (int i = 1; i < 4; i++) {
-									allLines += '\n' + lastLines[i];
+							switch (id.data.getMaterial()) {
+							case WALL_SIGN:
+							case SIGN:
+								try {
+									// Just signs and command blocks.
+									String allLines = lastLines[0];
+									for (int i = 1; i < 4; i++) {
+										allLines += '\n' + lastLines[i];
+									}
+									FileUtilities.writeShort(out, allLines.length() + 1);
+									FileUtilities.writeShortString(out, allLines);
+								} catch (IndexOutOfBoundsException e) {
+									e.printStackTrace();
+									FileUtilities.writeShort(out, 0); // To prevent corruption of
+																		// the output.
 								}
-								FileUtilities.writeShort(out, allLines.length() + 1);
-								FileUtilities.writeShortString(out, allLines);
-							} catch (IndexOutOfBoundsException e) {
-								e.printStackTrace();
-								FileUtilities.writeShort(out, 0); // To prevent corruption of
-																	// the output.
+								break;
+							case COMMAND_BLOCK:
+							case REPEATING_COMMAND_BLOCK:
+							case CHAIN_COMMAND_BLOCK:
+								String command, name;
+
+								if (lastLines == null) {
+									name = "";
+									command = "";
+								} else {
+									try {
+										name = lastLines[0];
+										command = lastLines[1];
+									} catch (IndexOutOfBoundsException e) {
+										e.printStackTrace();
+										name = "";
+										command = "";
+									}
+								}
+								byte[] nameBytes = name.getBytes(StandardCharsets.UTF_8);
+								byte[] commandBytes = command.getBytes(StandardCharsets.UTF_8);
+
+								FileUtilities.writeShort(out, nameBytes.length + commandBytes.length + 4);
+								FileUtilities.writeShort(out, nameBytes.length);
+								out.write(nameBytes);
+								FileUtilities.writeShort(out, commandBytes.length);
+								out.write(commandBytes);
+								break;
+							default:
+								Main.plugin.getLogger()
+										.warning("Unknown data state found during conversion from old to 1.13+.");
 							}
 						} else {
 							// Write the count.
