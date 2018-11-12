@@ -93,9 +93,29 @@ public class WatchDogRegion {
 	public WatchDogRegion(Location min, Location max, String prefix) {
 		this.min = min;
 		this.max = max;
+		fixCoordinates();
 		this.originalWorldSaveSetting = min.getWorld().isAutoSave();
 		this.prefix = prefix;
 		watchDogs.add(this);
+	}
+	
+	private void fixCoordinates() {
+		int temp;
+		if(min.getX() > max.getBlockX()) {
+			temp = min.getBlockX();
+			min.setX(max.getBlockX());
+			max.setX(temp);
+		}
+		if(min.getY() > max.getBlockY()) {
+			temp = min.getBlockY();
+			min.setY(max.getBlockY());
+			max.setY(temp);
+		}
+		if(min.getZ() > max.getBlockZ()) {
+			temp = min.getBlockZ();
+			min.setZ(max.getBlockZ());
+			max.setZ(temp);
+		}
 	}
 
 	/**
@@ -153,6 +173,13 @@ public class WatchDogRegion {
 	}
 
 	/**
+	 * @return the location of the minimum x, y, and z of the region.
+	 */
+	public final Location getMin() {
+		return min;
+	}
+
+	/**
 	 * Used to check if the location is in the WatchDog's region.
 	 * 
 	 * @param loc The location being tested.
@@ -177,9 +204,8 @@ public class WatchDogRegion {
 			for (WatchDogRegion watchDog : watchDogs) {
 				if (watchDog.isInRegion(player.getLocation())) {
 					count++;
-					sender.sendMessage(
-							Main.prefix + "Detected you are in a region! Rolling back all "
-									+ watchDog.originalStates.size() + " blocks..");
+					sender.sendMessage(Main.prefix + "Detected you are in a region! Rolling back all "
+							+ watchDog.originalStates.size() + " blocks..");
 					watchDog.rollBack(sender, true, true);
 				}
 			}
@@ -206,9 +232,8 @@ public class WatchDogRegion {
 			for (WatchDogRegion watchDog : watchDogs) {
 				if (watchDog.isInRegion(player.getLocation())) {
 					count++;
-					sender.sendMessage(
-							watchDog.prefix + "Detected you are in a region! Exporting all "
-									+ watchDog.originalStates.size() + " blocks..");
+					sender.sendMessage(watchDog.prefix + "Detected you are in a region! Exporting all "
+							+ watchDog.originalStates.size() + " blocks..");
 					try {
 						if (count == 1)
 							watchDog.export(fileName);
@@ -239,8 +264,7 @@ public class WatchDogRegion {
 		// Uses worldedit to get the player's region.
 		WorldEditPlugin worldEditPlugin = null;
 		WatchDogRegion createdWatchdog = null;
-		worldEditPlugin = (WorldEditPlugin) Bukkit.getServer().getPluginManager()
-				.getPlugin("WorldEdit");
+		worldEditPlugin = (WorldEditPlugin) Bukkit.getServer().getPluginManager().getPlugin("WorldEdit");
 		if (worldEditPlugin == null) {
 			player.sendMessage(Main.prefix + "Error with region command: WorldEdit is null.");
 			return null;
@@ -254,10 +278,8 @@ public class WatchDogRegion {
 			if (sel instanceof CuboidRegion) {
 				Vector min = sel.getMinimumPoint();
 				Vector max = sel.getMaximumPoint();
-				Location minLoc = new Location(player.getWorld(), min.getBlockX(), min.getBlockY(),
-						min.getBlockZ());
-				Location maxLoc = new Location(player.getWorld(), max.getBlockX(), max.getBlockY(),
-						max.getBlockZ());
+				Location minLoc = new Location(player.getWorld(), min.getBlockX(), min.getBlockY(), min.getBlockZ());
+				Location maxLoc = new Location(player.getWorld(), max.getBlockX(), max.getBlockY(), max.getBlockZ());
 				createdWatchdog = new WatchDogRegion(minLoc, maxLoc, Main.prefix);
 				player.sendMessage(Main.prefix + "WatchDog region created!");
 			} else {
@@ -296,8 +318,7 @@ public class WatchDogRegion {
 	public final void rollBack(final CommandSender sender, final boolean clearEntities,
 			final boolean quickClearEntities) {
 		final int size = originalStates.size();
-		final List<BlockState> originalStates = new ArrayList<BlockState>(
-				this.originalStates.values());
+		final List<BlockState> originalStates = new ArrayList<BlockState>(this.originalStates.values());
 		this.originalStates.clear();
 
 		final long beginTime = System.nanoTime();
@@ -307,8 +328,7 @@ public class WatchDogRegion {
 		Collections.sort(originalStates, byHeight);
 		if (clearEntities) {
 			// In case there are entities that can cause problems, like lit TNT.
-			clearing = new ClearEntities(min, max, null, quickClearEntities)
-					.progressiveClearEntities();
+			clearing = new ClearEntities(min, max, null, quickClearEntities).progressiveClearEntities();
 		} else {
 			clearing = null;
 		}
@@ -318,8 +338,8 @@ public class WatchDogRegion {
 		if (size > 0) {
 			TaskManager.addTask();
 
-			rollbackTask = Main.plugin.getServer().getScheduler()
-					.scheduleSyncRepeatingTask(Main.plugin, new Runnable() {
+			rollbackTask = Main.plugin.getServer().getScheduler().scheduleSyncRepeatingTask(Main.plugin,
+					new Runnable() {
 						int index = 0;
 						long tick = 0;
 
@@ -329,8 +349,7 @@ public class WatchDogRegion {
 							long startTime = System.nanoTime();
 
 							while ((clearing == null || clearing.isDone()) && index < size
-									&& System.nanoTime() - startTime < TaskManager.getMaxTime()
-											* 1000000) {
+									&& System.nanoTime() - startTime < TaskManager.getMaxTime() * 1000000) {
 								// The update puts it back to the way it was.
 								try {
 									originalStates.get(index).update(true, false);
@@ -343,9 +362,7 @@ public class WatchDogRegion {
 							// Lets the user know how it is going.
 							if (sender != null && tick % 100 == 0) {
 								if (clearing == null || clearing.isDone())
-									sender.sendMessage(prefix
-											+ new DecimalFormat("#.00")
-													.format(index / (double) size)
+									sender.sendMessage(prefix + new DecimalFormat("#.00").format(index / (double) size)
 											+ "% done with Rollback operation.");
 								else
 									sender.sendMessage(prefix
@@ -360,8 +377,7 @@ public class WatchDogRegion {
 									sender.sendMessage(prefix + "Done with rollback!");
 								}
 								TaskManager.removeTask();
-								new WDRollbackEndEvent(wd, System.nanoTime() - beginTime, size,
-										EndStatus.SUCCESS);
+								new WDRollbackEndEvent(wd, System.nanoTime() - beginTime, size, EndStatus.SUCCESS);
 							}
 						}
 					}, 1, 1);
@@ -405,8 +421,7 @@ public class WatchDogRegion {
 			try {
 				if (id == null) {
 					Material material = data.getMaterial();
-					id = cache.add(data,
-							material == Material.SIGN || material == Material.WALL_SIGN);
+					id = cache.add(data, material == Material.SIGN || material == Material.WALL_SIGN);
 					// New block.
 
 					String dataAsString = data.getAsString();
@@ -450,8 +465,7 @@ public class WatchDogRegion {
 	 * @param prefix   The prefix used for all messages. Do not use null.
 	 * @return The region that will be importing into.
 	 */
-	public final static WatchDogRegion importWatchDog(String fileName, CommandSender sender,
-			String prefix) {
+	public final static WatchDogRegion importWatchDog(String fileName, CommandSender sender, String prefix) {
 		File file = new File(fileName + ".wdbackup");
 		BufferedInputStream in = null;
 		int worldNameLength;
@@ -486,10 +500,8 @@ public class WatchDogRegion {
 				return null;
 			}
 			// Gets the min and max locations of the region.
-			min = new Location(world, FileUtilities.readInt(in), FileUtilities.readInt(in),
-					FileUtilities.readInt(in));
-			max = new Location(world, FileUtilities.readInt(in), FileUtilities.readInt(in),
-					FileUtilities.readInt(in));
+			min = new Location(world, FileUtilities.readInt(in), FileUtilities.readInt(in), FileUtilities.readInt(in));
+			max = new Location(world, FileUtilities.readInt(in), FileUtilities.readInt(in), FileUtilities.readInt(in));
 
 			// Looks for an existing watchdog that has the same region
 			for (int index = 0; index < watchDogs.size() && exportedTo == null; index++) {
@@ -562,8 +574,7 @@ class ImportOperation extends BukkitRunnable {
 	private HashMap<Integer, BlockCache> dataCache = new HashMap<Integer, BlockCache>();
 	private final byte[] bytes = new byte[1000];
 
-	ImportOperation(InputStream in, Location min, World world, WatchDogRegion exportedTo,
-			CommandSender sender) {
+	ImportOperation(InputStream in, Location min, World world, WatchDogRegion exportedTo, CommandSender sender) {
 		this.in = in;
 		blockLocation = new Location(world, 0, 0, 0);
 		this.min = min;
@@ -578,8 +589,7 @@ class ImportOperation extends BukkitRunnable {
 		long time = System.nanoTime();
 		try {
 			// Loops until it runs out of stuff to import, or time.
-			while ((in.available() > 0)
-					&& ((System.nanoTime() - time) < TaskManager.getMaxTime() * 1000000)) {
+			while ((in.available() > 0) && ((System.nanoTime() - time) < TaskManager.getMaxTime() * 1000000)) {
 				// Gets the X Y and Z from the file.
 				blockLocation.setX(min.getX() + FileUtilities.readInt(in));
 				blockLocation.setY(min.getY() + FileUtilities.readInt(in));
@@ -600,8 +610,7 @@ class ImportOperation extends BukkitRunnable {
 					String blockDataString = FileUtilities.readShortString(in, bytes);
 					// Reads the new ID
 					id = in.read();
-					data = new BlockCache(id, hasExtraData,
-							Bukkit.createBlockData(blockDataString));
+					data = new BlockCache(id, hasExtraData, Bukkit.createBlockData(blockDataString));
 					dataCache.put(id, data);
 
 				} else {
@@ -669,8 +678,7 @@ class ImportOperation extends BukkitRunnable {
 			e.printStackTrace();
 		}
 		TaskManager.removeTask();
-		new WDImportEndEvent(exportedTo, System.nanoTime() - startTime, blocksImported, endStatus,
-				sender);
+		new WDImportEndEvent(exportedTo, System.nanoTime() - startTime, blocksImported, endStatus, sender);
 		// Cancels the task because it is done.
 		this.cancel();
 

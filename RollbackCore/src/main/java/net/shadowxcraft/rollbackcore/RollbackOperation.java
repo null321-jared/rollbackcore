@@ -157,6 +157,14 @@ abstract class RollbackOperation implements Runnable {
 			lastTime = currentTime;
 		}
 	}
+	
+	public Location getMin() {
+		return new Location(world, minX, minY, minZ);
+	}
+	
+	public String getFileName() {
+		return fileName;
+	}
 
 	static {
 		String bukkitVersion = Bukkit.getVersion();

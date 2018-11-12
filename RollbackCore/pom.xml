@@ -19,19 +19,16 @@
 			<id>central</id>
 			<url>http://central.maven.org/maven2</url>
 		</repository>
-		<!-- <repository>
-			<id>sk89q-snapshots</id>
-			<url>http://maven.sk89q.com/artifactory/repo</url>
-			<releases>
-				<enabled>true</enabled>
-			</releases>
-			<snapshots>
-				<enabled>true</enabled>
-			</snapshots>
-		</repository>-->
+		<!-- <repository> <id>sk89q-snapshots</id> <url>http://maven.sk89q.com/artifactory/repo</url> 
+			<releases> <enabled>true</enabled> </releases> <snapshots> <enabled>true</enabled> 
+			</snapshots> </repository> -->
 		<repository>
-		  <id>jitpack.io</id>
-		  <url>https://jitpack.io</url>
+			<id>jitpack.io</id>
+			<url>https://jitpack.io</url>
+		</repository>
+		<repository>
+			<id>njol-repo</id>
+			<url>http://maven.njol.ch/repo/</url>
 		</repository>
 	</repositories>
 	<dependencies>
@@ -50,11 +47,8 @@
 			<scope>provided</scope>
 		</dependency>
 		<!-- Worldedit -->
-		<!-- <dependency>
-			<groupId>com.sk89q.worldedit</groupId>
-			<artifactId>worldedit-bukkit</artifactId>
-			<version>7.0.0-SNAPSHOT</version>
-		</dependency>-->
+		<!-- <dependency> <groupId>com.sk89q.worldedit</groupId> <artifactId>worldedit-bukkit</artifactId> 
+			<version>7.0.0-SNAPSHOT</version> </dependency> -->
 		<!-- https://mvnrepository.com/artifact/org.lz4/lz4-java -->
 		<dependency>
 			<groupId>org.lz4</groupId>
@@ -112,5 +106,5 @@
 			</plugin>
 		</plugins>
 	</build>
-	<version>3.3.0-BETA</version>
+	<version>3.4.0-BETA</version>
 </project>
