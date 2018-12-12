@@ -50,11 +50,11 @@ import org.bukkit.scheduler.BukkitRunnable;
 
 import com.sk89q.worldedit.IncompleteRegionException;
 import com.sk89q.worldedit.LocalSession;
-import com.sk89q.worldedit.Vector;
 import com.sk89q.worldedit.WorldEdit;
 import com.sk89q.worldedit.bukkit.BukkitAdapter;
 import com.sk89q.worldedit.bukkit.BukkitPlayer;
 import com.sk89q.worldedit.bukkit.WorldEditPlugin;
+import com.sk89q.worldedit.math.BlockVector3;
 import com.sk89q.worldedit.regions.CuboidRegion;
 import com.sk89q.worldedit.regions.Region;
 
@@ -276,8 +276,8 @@ public class WatchDogRegion {
 			Region sel = session.getSelection(bPlayer.getWorld());
 			// Checks if they have a selection
 			if (sel instanceof CuboidRegion) {
-				Vector min = sel.getMinimumPoint();
-				Vector max = sel.getMaximumPoint();
+				BlockVector3 min = sel.getMinimumPoint();
+				BlockVector3 max = sel.getMaximumPoint();
 				Location minLoc = new Location(player.getWorld(), min.getBlockX(), min.getBlockY(), min.getBlockZ());
 				Location maxLoc = new Location(player.getWorld(), max.getBlockX(), max.getBlockY(), max.getBlockZ());
 				createdWatchdog = new WatchDogRegion(minLoc, maxLoc, Main.prefix);
