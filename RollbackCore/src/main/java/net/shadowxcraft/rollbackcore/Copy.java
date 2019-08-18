@@ -223,6 +223,10 @@ public class Copy extends RollbackOperation {
 
 		// Creates the file.
 		try {
+			File parent = file.getParentFile();
+			if(parent != null) {
+				parent.mkdirs();
+			}
 			file.createNewFile();
 		} catch (IOException e) {
 			System.out.print("Path: " + file.getAbsolutePath());
