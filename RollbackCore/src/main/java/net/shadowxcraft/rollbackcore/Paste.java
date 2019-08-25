@@ -39,6 +39,7 @@ import org.bukkit.block.Sign;
 import org.bukkit.block.Skull;
 import org.bukkit.block.data.BlockData;
 import org.bukkit.command.CommandSender;
+import org.bukkit.scheduler.BukkitRunnable;
 
 import net.jpountz.lz4.LZ4BlockInputStream;
 import net.jpountz.lz4.LZ4Factory;
@@ -65,6 +66,7 @@ public class Paste extends RollbackOperation {
 	// Keeps track of if entities should be cleared.
 	private final boolean clearEntities;
 	private final boolean ignoreAir;
+	private boolean updateFailed = false;
 	// Stored for efficiency.
 	private static BlockData air = Bukkit.createBlockData(Material.AIR),
 			caveAir = Bukkit.createBlockData(Material.CAVE_AIR);
@@ -79,12 +81,8 @@ public class Paste extends RollbackOperation {
 	long blockIndex = 0, blocksChanged;// Used to store the index of the block, for
 										// statistical reasons.
 	// TODO: Optimize the cache and the loading of the data.
-	private HashMap<Integer, BlockCache> dataCache = new HashMap<Integer, BlockCache>(); // Stores
-																							// the
-																							// blockdata
-																							// for
-																							// the
-																							// IDs.
+	// Stores the blockdata for the IDs.
+	private HashMap<Integer, BlockCache<BlockData>> dataCache = new HashMap<Integer, BlockCache<BlockData>>();
 
 	/**
 	 * The legacy constructor for backwards compatibility.
@@ -122,6 +120,7 @@ public class Paste extends RollbackOperation {
 	 * @param ignoreAir     Not check blocks that are air in the file. May be useful
 	 *                      for some plugins.
 	 */
+
 	public Paste(Location min, String fileName, CommandSender sender, boolean clearEntities, boolean ignoreAir,
 			String prefix) {
 		super(min, true);
@@ -146,6 +145,16 @@ public class Paste extends RollbackOperation {
 		for (int i = 0; i < numberOfTasks; i++)
 			runningPastes.get(i).end(EndStatus.FAIL_EXERNAL_TERMINATION);
 		return numberOfTasks;
+	}
+
+	/**
+	 * Internal use only. It lets it know that the update was unable to fully update
+	 * it to the current version. It will now no longer attempt to update blockdata,
+	 * and will instead handle unknown blocks with a default block.
+	 */
+	void reportIncompleteUpdate() {
+		Main.plugin.getLogger().warning("Incomplete update reported for paste.");
+		updateFailed = true;
 	}
 
 	/**
@@ -264,9 +273,14 @@ public class Paste extends RollbackOperation {
 					break;
 				case "minecraft_version":
 					String version = FileUtilities.readString(in, valueLength, bytes);
-					if (!version.equalsIgnoreCase(mcVersion)) {
-						Main.plugin.getLogger().warning(
-								"File was written in MC version " + version + ", but you are running " + mcVersion);
+					if (!version.equalsIgnoreCase(CURRENT_MC_VERSION)) {
+						Main.plugin.getLogger().warning("File was written in MC version " + version
+								+ ", but you are running " + CURRENT_MC_VERSION);
+						if (!updateFailed) {
+							in.close();
+							LegacyUpdater.updateModernBlockData(fileName, this);
+							return false;
+						}
 					}
 					break;
 				default:
@@ -340,7 +354,11 @@ public class Paste extends RollbackOperation {
 			// Schedules it.
 			Bukkit.getScheduler().runTaskLater(Main.plugin, nextPaste, 1);
 		} else {
-			new PasteEndEvent(this, System.nanoTime() - startTime, blocksChanged, endStatus);
+			new BukkitRunnable() {
+				public void run() {
+					new PasteEndEvent(Paste.this, System.nanoTime() - startTime, blocksChanged, endStatus);
+				}
+			}.runTask(Main.plugin);
 		}
 	}
 
@@ -369,7 +387,7 @@ public class Paste extends RollbackOperation {
 	}
 
 	int id = -1;
-	private BlockCache lastData = null;
+	private BlockCache<BlockData> lastData = null;
 	private int count = 0;
 	private final byte[] bytes = new byte[1000];
 
@@ -394,7 +412,17 @@ public class Paste extends RollbackOperation {
 					String blockDataString = FileUtilities.readShortString(in, bytes);
 					// Reads the new ID
 					id = in.read();
-					lastData = new BlockCache(id, hasExtraData, Bukkit.createBlockData(blockDataString));
+					BlockData blockData;
+					try {
+						blockData = Bukkit.createBlockData(blockDataString);
+					} catch (Exception e) {
+						blockData = Material.STONE.createBlockData();
+						Main.plugin.getLogger().warning("Unable to create BlockData for \"" + blockDataString
+								+ "\"! Defaulting to stone. This problem is caused by either RollbackCore being "
+								+ "unable to update the file to the newest version, or the update data being incorrect.");
+					}
+
+					lastData = new BlockCache<BlockData>(id, hasExtraData, blockData);
 					dataCache.put(id, lastData);
 
 				} else {

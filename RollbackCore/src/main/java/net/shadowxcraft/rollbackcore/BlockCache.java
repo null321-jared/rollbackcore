@@ -1,13 +1,11 @@
 package net.shadowxcraft.rollbackcore;
 
-import org.bukkit.block.data.BlockData;
-
-class BlockCache {
+class BlockCache<E> {
 	boolean hasExtraData;
-	BlockData data;
+	E data;
 	int id;
 
-	public BlockCache(int id, boolean hasExtraData, BlockData data) {
+	public BlockCache(int id, boolean hasExtraData, E data) {
 		this.id = id;
 		this.hasExtraData = hasExtraData;
 		this.data = data;

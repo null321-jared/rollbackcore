@@ -33,7 +33,7 @@ import org.bukkit.scheduler.BukkitTask;
  * @since 2.0
  */
 abstract class RollbackOperation implements Runnable {
-	protected static String mcVersion;
+	public static final String CURRENT_MC_VERSION;
 
 	protected World world;
 	protected int minX, minY, minZ;
@@ -168,7 +168,7 @@ abstract class RollbackOperation implements Runnable {
 
 	static {
 		String bukkitVersion = Bukkit.getVersion();
-		mcVersion = bukkitVersion.substring(bukkitVersion.lastIndexOf(' ') + 1,
+		CURRENT_MC_VERSION = bukkitVersion.substring(bukkitVersion.lastIndexOf(' ') + 1,
 				bukkitVersion.indexOf(')'));
 	}
 }

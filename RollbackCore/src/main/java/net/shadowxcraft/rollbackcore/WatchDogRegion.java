@@ -394,7 +394,7 @@ public class WatchDogRegion {
 	public final void export(String fileName) throws IOException {
 		final short VERSION = 2;
 
-		LRUBlockDataCache cache = new LRUBlockDataCache(1, 255);
+		LRUCache<BlockData> cache = new LRUCache<BlockData>(1, 255);
 		BufferedOutputStream out;
 		File file = new File(fileName + ".wdbackup");
 		file.createNewFile();
@@ -417,7 +417,7 @@ public class WatchDogRegion {
 			FileUtilities.writeInt(out, state.getY() - min.getBlockY());
 			FileUtilities.writeInt(out, state.getZ() - min.getBlockZ());
 			BlockData data = state.getBlockData();
-			LRUBlockDataCache.Node id = cache.get(data);
+			LRUCache<BlockData>.Node id = cache.get(data);
 			try {
 				if (id == null) {
 					Material material = data.getMaterial();
@@ -571,7 +571,7 @@ class ImportOperation extends BukkitRunnable {
 	CommandSender sender;
 	long startTime = System.nanoTime();
 	int blocksImported = 0;
-	private HashMap<Integer, BlockCache> dataCache = new HashMap<Integer, BlockCache>();
+	private HashMap<Integer, BlockCache<BlockData>> dataCache = new HashMap<Integer, BlockCache<BlockData>>();
 	private final byte[] bytes = new byte[1000];
 
 	ImportOperation(InputStream in, Location min, World world, WatchDogRegion exportedTo, CommandSender sender) {
@@ -600,7 +600,7 @@ class ImportOperation extends BukkitRunnable {
 					end(EndStatus.FILE_END_EARLY);
 					return;
 				}
-				BlockCache data;
+				BlockCache<BlockData> data;
 				if (id == 0) {
 					// New block
 
@@ -610,7 +610,7 @@ class ImportOperation extends BukkitRunnable {
 					String blockDataString = FileUtilities.readShortString(in, bytes);
 					// Reads the new ID
 					id = in.read();
-					data = new BlockCache(id, hasExtraData, Bukkit.createBlockData(blockDataString));
+					data = new BlockCache<BlockData>(id, hasExtraData, Bukkit.createBlockData(blockDataString));
 					dataCache.put(id, data);
 
 				} else {
@@ -649,7 +649,7 @@ class ImportOperation extends BukkitRunnable {
 
 	}
 
-	private void addExtaData(BlockCache data, BlockState state) throws IOException {
+	private void addExtaData(BlockCache<BlockData> data, BlockState state) throws IOException {
 		int length = FileUtilities.readShort(in);
 		switch (data.data.getMaterial()) {
 		case WALL_SIGN:

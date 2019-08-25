@@ -8,15 +8,16 @@ Config:
     targettime: 25
     # Compression. Compression can slow it down, but it also lowers the amount of
     # storage that is required.
-    # Defaults to "LZ4". It offers about a 40% reduction with minimal overhead.
+    # "LZ4" offers about a 40% reduction with minimal overhead.
     # GZip is currently unavailable (and is slower)
-    # The other option is "none"
-    compression: "LZ4"
+    # "none" is default because it lowers the chance of data corruption
+    compression: "none"
   arenas:
     examplearena:
       x: 1
       y: 1
       z: 1
       world: "world"
-# Don't change this, it may cause issues in the future if the config changes!
+custom-mappings: []
+# Don't change configversion. It may cause issues in the future if the config changes!
 configversion: 1.0

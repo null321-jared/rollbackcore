@@ -4,24 +4,22 @@ import java.util.ArrayDeque;
 import java.util.HashMap;
 import java.util.NoSuchElementException;
 
-import org.bukkit.block.data.BlockData;
-
-public class LRUBlockDataCache {
+public class LRUCache<E> {
 	class Node {
-		BlockData data;
+		E data;
 		int value;
 		boolean hasExtraData;
 		Node pre;
 		Node next;
 
-		public Node(BlockData key, int value, boolean hasExtraData) {
+		public Node(E key, int value, boolean hasExtraData) {
 			this.data = key;
 			this.value = value;
 			this.hasExtraData = hasExtraData;
 		}
 	}
 
-	HashMap<BlockData, Node> map = new HashMap<BlockData, Node>();
+	HashMap<E, Node> map = new HashMap<E, Node>();
 	ArrayDeque<Integer> unusedValues = new ArrayDeque<Integer>();
 	Node head = null;
 	Node end = null;
@@ -33,7 +31,7 @@ public class LRUBlockDataCache {
 	 * @param minValue The min value. Min 0.
 	 * @param maxValue The max value.
 	 */
-	public LRUBlockDataCache(int minValue, int maxValue) {
+	public LRUCache(int minValue, int maxValue) {
 		if (minValue < 0) {
 			throw new IllegalArgumentException("minValue must be at least 0.");
 		}
@@ -70,7 +68,7 @@ public class LRUBlockDataCache {
 			end = head;
 	}
 	
-	public Node get(BlockData key) {
+	public Node get(E key) {
 		Node node = map.get(key);
 		if (node != null) {
 			removeFromList(node);
@@ -81,7 +79,7 @@ public class LRUBlockDataCache {
 		return null;
 	}
 	
-	public int remove(BlockData key) {
+	public int remove(String key) {
 		Node node = map.remove(key);
 		if(node == null) {
 			throw new NoSuchElementException();
@@ -92,7 +90,7 @@ public class LRUBlockDataCache {
 		}
 	}
 
-	public Node add(BlockData key, boolean hasExtraData) {
+	public Node add(E key, boolean hasExtraData) {
 		Node old = map.get(key);
 		if (old != null) {
 			return old;

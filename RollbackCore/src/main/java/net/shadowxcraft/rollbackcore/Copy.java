@@ -68,9 +68,9 @@ public class Copy extends RollbackOperation {
 	long tick = 0; // Used to keep track of how many ticks the copy operation has run.
 	long blockIndex = 0, lastIndex = 0;// Used to store the index of the block, for statistical
 										// reasons.
-	private LRUBlockDataCache cache = new LRUBlockDataCache(1, 255); // Stores IDs for the BlockData
+	private LRUCache<BlockData> cache = new LRUCache<BlockData>(1, 255); // Stores IDs for the BlockData
 	private int count = 0; // Stores the number of blocks in a row
-	private LRUBlockDataCache.Node lastData = null; // Stores the string representation of the
+	private LRUCache<BlockData>.Node lastData = null; // Stores the string representation of the
 													// previous block.
 
 	/**
@@ -199,7 +199,7 @@ public class Copy extends RollbackOperation {
 			return false;
 
 		try {
-			out = startFile(out, maxX - minX, maxY - minY, maxZ - minZ);
+			out = startFile(out, maxX - minX, maxY - minY, maxZ - minZ, CURRENT_MC_VERSION);
 		} catch (IllegalArgumentException | IOException e) {
 			end(EndStatus.FAIL_IO_ERROR);
 			e.printStackTrace();
@@ -247,7 +247,7 @@ public class Copy extends RollbackOperation {
 	}
 
 	// Writes the initial data- Version, blocks, and size.
-	static final OutputStream startFile(OutputStream out, int diffX, int diffY, int diffZ)
+	static final OutputStream startFile(OutputStream out, int diffX, int diffY, int diffZ, String mcVersion)
 			throws IllegalArgumentException, IOException {
 		// Writes the version so that the plugin can convert/reject incompatible
 		// versions.
@@ -374,7 +374,7 @@ public class Copy extends RollbackOperation {
 			count++; // Increments the counter
 		} else {
 			// Searches for existing representation of block.
-			LRUBlockDataCache.Node id = cache.get(data);
+			LRUCache<BlockData>.Node id = cache.get(data);
 			try {
 				writeCount();
 				if (id == null) {
