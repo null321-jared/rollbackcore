@@ -35,6 +35,7 @@ public class Main extends JavaPlugin {
 	public static JavaPlugin plugin;
 	public static Path savesPath;
 	public static Path regionsPath;
+	public static Path worldsPath;
 	Metrics metrics;
 
 	// Fired when plugin is first enabled
@@ -51,6 +52,9 @@ public class Main extends JavaPlugin {
 
 			regionsPath = Paths.get(savesPath.toString(), "/regions");
 			Files.createDirectories(regionsPath);
+			
+			worldsPath = Paths.get(savesPath.toString(), "/worlds");
+			Files.createDirectories(worldsPath);
 		} catch (IOException e) {
 			// Failed to submit the stats :-(
 		}

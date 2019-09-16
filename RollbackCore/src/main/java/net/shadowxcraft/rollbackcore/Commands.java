@@ -89,6 +89,10 @@ public class Commands implements CommandExecutor {
 						mappingsCommand(sender, args);
 					} else if (args[0].equalsIgnoreCase("chunkLoaded")) {
 						chunkCommand(sender, args);
+					} else if (args[0].equalsIgnoreCase("worldbackup")) {
+						worldBackupCommand(sender, args);
+					} else if (args[0].equalsIgnoreCase("worldrollback")) {
+						worldRollbackCommand(sender, args);
 					} else {
 						sender.sendMessage(ChatColor.RED + "Unknown comand!");
 						helpCommand(sender);
@@ -104,7 +108,7 @@ public class Commands implements CommandExecutor {
 	}
 
 	private final void mappingsCommand(CommandSender sender, String[] args) {
-		if(args.length == 1) {
+		if (args.length == 1) {
 			printMappings(sender);
 		} else if (args.length == 2) {
 			Mapping mappings = LegacyUpdater.loadLatestConversion(args[1]);
@@ -122,15 +126,16 @@ public class Commands implements CommandExecutor {
 			sender.sendMessage(prefix + "Usage: /rollback mapppings [from] [to]");
 		}
 	}
-	
-	private final void printMappings(CommandSender sender)  {
+
+	private final void printMappings(CommandSender sender) {
 		TreeMap<String, TreeMap<String, Map<Pattern, String>>> mappings = LegacyUpdater.getMappings();
 		for (Map.Entry<String, TreeMap<String, Map<Pattern, String>>> toEntry : mappings.entrySet()) {
 			sender.sendMessage("Mappings to " + toEntry.getKey() + ":");
 			for (Map.Entry<String, Map<Pattern, String>> fromEntry : toEntry.getValue().entrySet()) {
 				sender.sendMessage("\tMappings from " + fromEntry.getKey() + ":");
 				for (Map.Entry<Pattern, String> replacementEntry : fromEntry.getValue().entrySet()) {
-					sender.sendMessage("\t\t" + replacementEntry.getKey().pattern() + " -> " + replacementEntry.getValue());
+					sender.sendMessage(
+							"\t\t" + replacementEntry.getKey().pattern() + " -> " + replacementEntry.getValue());
 				}
 			}
 		}
@@ -316,6 +321,74 @@ public class Commands implements CommandExecutor {
 		}
 	}
 
+	public final void worldBackupCommand(CommandSender sender, String[] args) {
+		if (args.length <= 3 && args.length >= 2) {
+			World world = Bukkit.getWorld(args[1]);
+			String directory;
+
+			if (world == null) {
+				sender.sendMessage(
+						prefix + "World \"" + args[1] + "\" not found! List of worlds: " + Bukkit.getWorlds());
+				return;
+			}
+
+			if (args.length == 3) {
+				directory = args[2];
+			} else {
+				directory = null;
+			}
+			WholeWorldRollback.backupWorld(world, directory);
+		}
+	}
+
+	public final void worldRollbackCommand(CommandSender sender, String[] args) {
+		if (args.length == 3 || args.length == 4 || args.length == 6 || args.length == 7) {
+			World worldToRollback = Bukkit.getWorld(args[1]);
+			String directory;
+			Location locToSendPlayers;
+
+			if (worldToRollback == null) {
+				sender.sendMessage(prefix + "World to rollback \"" + args[1] + "\" not found! List of worlds: "
+						+ Bukkit.getWorlds());
+				return;
+			}
+
+			World worldToSendPlayers = Bukkit.getWorld(args[2]);
+			if (worldToSendPlayers == null) {
+				sender.sendMessage(prefix + "World to rollback \"" + args[2] + "\" not found! List of worlds: "
+						+ Bukkit.getWorlds());
+				return;
+			}
+			if (args.length <= 4) {
+				locToSendPlayers = worldToSendPlayers.getSpawnLocation();
+			} else {
+				try {
+					locToSendPlayers = new Location(worldToSendPlayers, Double.parseDouble(args[3]),
+							Double.parseDouble(args[4]), Double.parseDouble(args[5]));
+				} catch (NumberFormatException e) {
+					sender.sendMessage(prefix + "Invalid number!");
+					return;
+				}
+			}
+
+			if (args.length == 7 || args.length == 4) {
+				directory = args[args.length - 1];
+			} else {
+				directory = null;
+			}
+			try {
+				WholeWorldRollback.startWholeWorldRollback(worldToRollback, locToSendPlayers, sender, prefix, directory);
+				sender.sendMessage(prefix + "World rollback running.");
+			} catch (Exception e) {
+				sender.sendMessage(prefix + "World rollback failed.");
+			}
+		} else {
+			sender.sendMessage(prefix
+					+ "Usage: /rollback worldrollback <worldname> <to-worldname> [<to-x> <to-y> <to-z>] [folder name]|\"\r\n"
+					+ " Rollbacks the world. The \"to-\" world is the world players should be teleported to.");
+		}
+	}
+
 	private final void helpCommand(CommandSender sender) {
 		sender.sendMessage(ChatColor.GRAY + "----------------------- " + ChatColor.GREEN + "[" + ChatColor.DARK_GREEN
 				+ "Help" + ChatColor.GREEN + "]" + ChatColor.GRAY + " -----------------------");
@@ -325,6 +398,11 @@ public class Commands implements CommandExecutor {
 		sender.sendMessage(ChatColor.GRAY + "/rollback watchdog <create|rollback> | The watchdog region commands.");
 		sender.sendMessage(ChatColor.GRAY
 				+ "/rollback <rollbackregion|addregion> <name> | Used for integration with minigame plugins.");
+		sender.sendMessage(ChatColor.GRAY + "/rollback worldbackup <worldname> [folder to put it] |"
+				+ " If the folder is left blank, it will use a folder in RollbackCore's folder.");
+		sender.sendMessage(ChatColor.GRAY
+				+ "/rollback worldrollback <worldname> <to-worldname> [<to-x> <to-y> <to-z>] [folder name]|"
+				+ " Rollbacks the world. The \"to-\" world is the world players should be teleported to.");
 		sender.sendMessage(ChatColor.GRAY + "----------------------------------------------------");
 	}
 
