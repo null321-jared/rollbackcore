@@ -337,7 +337,12 @@ public class Commands implements CommandExecutor {
 			} else {
 				directory = null;
 			}
-			WholeWorldRollback.backupWorld(world, directory);
+			File result = WholeWorldRollback.backupWorld(world, directory);
+			if (result == null) {
+				sender.sendMessage(prefix + "Backup failed. Check console for errors.");
+			} else {
+				sender.sendMessage(prefix + "Done, but please also make a manual backup in case something fails!");
+			}
 		}
 	}
 
