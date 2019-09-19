@@ -53,6 +53,8 @@ public class WholeWorldRollback {
 
 		File dirToPutIt = new File(parentDirToPutItFile + File.separator + worldToRollback.getName());
 		try {
+			if(dirToPutIt.exists())
+				delete(dirToPutIt);
 			copy(worldFile, dirToPutIt);
 		} catch (IOException e) {
 			e.printStackTrace();
