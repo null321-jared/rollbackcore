@@ -37,23 +37,24 @@ public class WholeWorldRollback {
 	 * Backs up a world for future rolling back. It makes a copy of the world in a
 	 * sub-folder of the specified folder.
 	 * 
-	 * @param worldToRollback  The world that will be backed up.
+	 * @param worldToBackup    The world that will be backed up.
 	 * @param parentDirToPutIt The location where it will put the folder of the
 	 *                         world backup. Or null for the default location in the
 	 *                         RollbackCore folder.
 	 * @return The file of the world rolled back, or null if it failed.
 	 */
-	public static File backupWorld(World worldToRollback, String parentDirToPutIt) {
+	public static File backupWorld(World worldToBackup, String parentDirToPutIt) {
 		File parentDirToPutItFile = parentDirToPutIt == null ? Main.worldsPath.toFile() : new File(parentDirToPutIt);
 		if (!parentDirToPutItFile.exists()) {
 			parentDirToPutItFile.mkdirs();
 		}
 
-		File worldFile = worldToRollback.getWorldFolder();
+		worldToBackup.save();
+		File worldFile = worldToBackup.getWorldFolder();
 
-		File dirToPutIt = new File(parentDirToPutItFile + File.separator + worldToRollback.getName());
+		File dirToPutIt = new File(parentDirToPutItFile + File.separator + worldToBackup.getName());
 		try {
-			if(dirToPutIt.exists())
+			if (dirToPutIt.exists())
 				delete(dirToPutIt);
 			copy(worldFile, dirToPutIt);
 		} catch (IOException e) {
@@ -98,18 +99,21 @@ public class WholeWorldRollback {
 		for (Player player : worldToRollback.getPlayers()) {
 			player.teleport(locToSendPlayers);
 		}
-		if (!worldToRollback.getPlayers().isEmpty()) {
-			if (sender != null)
-				sender.sendMessage(
-						prefix == null ? "" : prefix + "Players are still in the world that needs to be rolled back");
-			throw new IllegalStateException("Players are still in the world that needs to be rolled back");
-		}
 
 		final String folderWithBackupProcessed;
 		if (folderWithBackup == null)
 			folderWithBackupProcessed = Main.worldsPath.toString();
 		else
 			folderWithBackupProcessed = folderWithBackup;
+
+		if (!worldToRollback.getPlayers().isEmpty()) {
+			if (sender != null)
+				sender.sendMessage(
+						prefix == null ? "" : prefix + "Players are still in the world that needs to be rolled back");
+			new WorldRollbackEndEvent(worldToRollback, folderWithBackupProcessed, System.nanoTime() - startTime,
+					EndStatus.FAIL_UNLOAD_WORLD_FAILURE, sender, prefix);
+			return;
+		}
 
 		File filesToCopy = new File(folderWithBackupProcessed + File.separator + worldToRollback.getName());
 		if (!filesToCopy.exists() || !filesToCopy.isDirectory()) {
@@ -121,28 +125,33 @@ public class WholeWorldRollback {
 
 		WorldCreator worldCreator = new WorldCreator(worldToRollback.getName());
 
-		Bukkit.unloadWorld(worldToRollback.getName(), false);
-		new BukkitRunnable() {
-			public void run() {
-				File worldFolder = worldToRollback.getWorldFolder();
-				try {
-					delete(worldFolder);
-					copy(filesToCopy, worldFolder);
+		boolean unloadSuccessful = Bukkit.unloadWorld(worldToRollback.getName(), false);
+		if (unloadSuccessful) {
+			new BukkitRunnable() {
+				public void run() {
+					File worldFolder = worldToRollback.getWorldFolder();
+					try {
+						delete(worldFolder);
+						copy(filesToCopy, worldFolder);
 
-					new BukkitRunnable() {
-						public void run() {
-							World world = worldCreator.createWorld();
-							new WorldRollbackEndEvent(world, folderWithBackupProcessed, System.nanoTime() - startTime,
-									EndStatus.SUCCESS, sender, prefix);
-						}
-					}.runTaskLater(Main.plugin, 10);
-				} catch (IOException e) {
-					e.printStackTrace();
-					new WorldRollbackEndEvent(worldToRollback, folderWithBackupProcessed, System.nanoTime() - startTime,
-							EndStatus.FAIL_IO_ERROR, sender, prefix);
+						new BukkitRunnable() {
+							public void run() {
+								World world = worldCreator.createWorld();
+								new WorldRollbackEndEvent(world, folderWithBackupProcessed,
+										System.nanoTime() - startTime, EndStatus.SUCCESS, sender, prefix);
+							}
+						}.runTaskLater(Main.plugin, 10);
+					} catch (IOException e) {
+						e.printStackTrace();
+						new WorldRollbackEndEvent(worldToRollback, folderWithBackupProcessed,
+								System.nanoTime() - startTime, EndStatus.FAIL_IO_ERROR, sender, prefix);
+					}
 				}
-			}
-		}.runTaskAsynchronously(Main.plugin);
+			}.runTaskAsynchronously(Main.plugin);
+		} else {
+			new WorldRollbackEndEvent(worldToRollback, folderWithBackupProcessed, System.nanoTime() - startTime,
+					EndStatus.FAIL_UNLOAD_WORLD_FAILURE, sender, prefix);
+		}
 	}
 
 	// ------------------------------------------------ //
@@ -203,7 +212,9 @@ public class WholeWorldRollback {
 
 		@Override
 		public FileVisitResult visitFile(final Path file, final BasicFileAttributes attrs) throws IOException {
-			Files.copy(file, targetPath.resolve(sourcePath.relativize(file)), StandardCopyOption.REPLACE_EXISTING);
+			Path to = targetPath.resolve(sourcePath.relativize(file));
+			Files.createDirectories(to);
+			Files.copy(file, to, StandardCopyOption.REPLACE_EXISTING);
 			System.out.println("Copying " + file.toString());
 			return FileVisitResult.CONTINUE;
 		}

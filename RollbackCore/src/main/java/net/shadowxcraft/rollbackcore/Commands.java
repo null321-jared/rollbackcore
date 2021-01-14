@@ -407,7 +407,8 @@ public class Commands implements CommandExecutor {
 				+ " If the folder is left blank, it will use a folder in RollbackCore's folder.");
 		sender.sendMessage(ChatColor.GRAY
 				+ "/rollback worldrollback <worldname> <to-worldname> [<to-x> <to-y> <to-z>] [folder name]|"
-				+ " Rollbacks the world. The \"to-\" world is the world players should be teleported to.");
+				+ " Rollbacks the world. The \"to-\" world is the world players should be teleported to."
+				+ " May not work on the main world.");
 		sender.sendMessage(ChatColor.GRAY + "----------------------------------------------------");
 	}
 

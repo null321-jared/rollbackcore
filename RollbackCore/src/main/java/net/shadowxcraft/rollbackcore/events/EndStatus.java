@@ -29,6 +29,8 @@ public enum EndStatus {
 	FAIL_DUPLICATE("failed because it is a duplicate operation."),
 	FAIL_EXERNAL_TERMINATION("was terminated early!"),
 	FAIL_UNKNOWN_WORLD("failed because the world cannot be found!"),
+	FAIL_UNLOAD_WORLD_FAILURE("failed because the world could not be unloaded."),
+	FAIL_PLAYERS_IN_WORLD("failed because there were still players in the world being unloaded."),
 	FAIL_UNKNOWN_COMPRESSION("failed because RollbackCore does not have the required compression algoritm.");
 
 	private final String description;
