@@ -465,7 +465,8 @@ public class Copy extends RollbackOperation {
 			out.write(commandBytes);
 			break;
 		default:
-			Main.plugin.getLogger().warning("Code requested writing of unknown blockstate!");
+			Main.plugin.getLogger().warning("Code requested writing of unknown blockstate: " + blockState.getType().toString());
+			FileUtilities.writeShort(out, 0); // To prevent corruption of the output.
 		}
 	}
 

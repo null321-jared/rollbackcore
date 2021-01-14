@@ -100,6 +100,7 @@ public class LRUCache<E> {
 				map.remove(node.data);
 				removeFromList(node);
 				node.data = key;
+				node.hasExtraData = hasExtraData;
 				map.put(key, node);
 				setHead(node);
 				return node;
