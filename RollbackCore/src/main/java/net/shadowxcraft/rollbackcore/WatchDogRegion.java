@@ -87,8 +87,9 @@ public class WatchDogRegion {
 	 * This constructor creates a new temporary watchdog region for the variables
 	 * specified.
 	 * 
-	 * @param min The corner of the region with the lowest x y and z.
-	 * @param max the corner of the region with the greatest x y and z.
+	 * @param min    The corner of the region with the lowest x y and z.
+	 * @param max    the corner of the region with the greatest x y and z.
+	 * @param prefix The prefix used for sending messages to players.
 	 */
 	public WatchDogRegion(Location min, Location max, String prefix) {
 		this.min = min;
@@ -98,20 +99,20 @@ public class WatchDogRegion {
 		this.prefix = prefix;
 		watchDogs.add(this);
 	}
-	
+
 	private void fixCoordinates() {
 		int temp;
-		if(min.getX() > max.getBlockX()) {
+		if (min.getX() > max.getBlockX()) {
 			temp = min.getBlockX();
 			min.setX(max.getBlockX());
 			max.setX(temp);
 		}
-		if(min.getY() > max.getBlockY()) {
+		if (min.getY() > max.getBlockY()) {
 			temp = min.getBlockY();
 			min.setY(max.getBlockY());
 			max.setY(temp);
 		}
-		if(min.getZ() > max.getBlockZ()) {
+		if (min.getZ() > max.getBlockZ()) {
 			temp = min.getBlockZ();
 			min.setZ(max.getBlockZ());
 			max.setZ(temp);
@@ -220,8 +221,9 @@ public class WatchDogRegion {
 	/**
 	 * Used to allow a player to export the watchdog(s) the player is in.
 	 * 
-	 * @param sender The CommandSender that is issuing the command. Should be a
-	 *               player.
+	 * @param sender   The CommandSender that is issuing the command. Should be a
+	 *                 player.
+	 * @param fileName The name of the exported regions.
 	 */
 	public final static void playerExport(CommandSender sender, String fileName) {
 		if (sender instanceof Player) {
@@ -309,7 +311,6 @@ public class WatchDogRegion {
 	 * 
 	 * @param sender             The person who receives the messages. Null if no
 	 *                           one.
-	 * @param prefix             The prefixes of the sent messages.
 	 * @param clearEntities      If entities should be cleared
 	 * @param quickClearEntities If the entity clear process should only check
 	 *                           loaded chunks. Significantly faster but less
@@ -389,7 +390,7 @@ public class WatchDogRegion {
 	 * 
 	 * @param fileName The file name (without extension) and directory that the file
 	 *                 will be stored in.
-	 * @throws IOException
+	 * @throws IOException if there is an exception while writing to the file.
 	 */
 	public final void export(String fileName) throws IOException {
 		final short VERSION = 2;

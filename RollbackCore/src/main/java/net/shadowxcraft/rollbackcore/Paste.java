@@ -107,10 +107,8 @@ public class Paste extends RollbackOperation {
 	 * Used to create a new paste operation instance that can be used to paste the
 	 * file.
 	 * 
-	 * @param x             Where the min-x of the paste will be pasted.
-	 * @param y             Where the min-y of the paste will be pasted.
-	 * @param z             Where the min-z of the paste will be pasted.
-	 * @param world         What world the paste will be pasted in.
+	 * @param min           Where the min coordinates and world of the paste that
+	 *                      will be pasted.
 	 * @param fileName      The path of the file
 	 * @param sender        The person who will get status messages. Use null for no
 	 *                      messages, and consoleSender for console.

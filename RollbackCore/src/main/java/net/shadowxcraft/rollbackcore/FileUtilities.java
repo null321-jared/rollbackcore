@@ -56,11 +56,9 @@ public class FileUtilities {
 
 	// Used to write a value to the file using the current storage way.
 	// Stores an unsigned short.
-	public static void writeShort(OutputStream out, int input)
-			throws IllegalArgumentException, IOException {
+	public static void writeShort(OutputStream out, int input) throws IllegalArgumentException, IOException {
 		if (input > 65535) {
-			throw new IllegalArgumentException(
-					"Input " + input + " is out of the legal range (0 to 65,535)");
+			throw new IllegalArgumentException("Input " + input + " is out of the legal range (0 to 65,535)");
 		}
 
 		out.write(input / 256);

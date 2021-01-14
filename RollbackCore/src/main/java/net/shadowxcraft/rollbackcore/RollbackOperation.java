@@ -129,14 +129,12 @@ abstract class RollbackOperation implements Runnable {
 			double percent = Math.round((double) 10000 * (currentIndex / (double) maxBlocks)) / 100;
 
 			// Calculate the rate of progress
-			double blocksPerSecond = (1000000000 * (currentIndex - lastIndex))
-					/ (currentTime - lastTime);
+			double blocksPerSecond = (1000000000 * (currentIndex - lastIndex)) / (currentTime - lastTime);
 
 			// Format it for the user
-			String detailedProgress = "(" + currentIndex + "/" + maxBlocks + ", "
-					+ (int) Math.round(blocksPerSecond) + " blocks/second).";
-			int estimatedTimeLeft = (int) Math
-					.round(100 * ((maxBlocks - currentIndex) / blocksPerSecond)) / 100;
+			String detailedProgress = "(" + currentIndex + "/" + maxBlocks + ", " + (int) Math.round(blocksPerSecond)
+					+ " blocks/second).";
+			int estimatedTimeLeft = (int) Math.round(100 * ((maxBlocks - currentIndex) / blocksPerSecond)) / 100;
 
 			String estimatedTimeLeftString = "";
 			if (estimatedTimeLeft > 0) {
@@ -149,26 +147,25 @@ abstract class RollbackOperation implements Runnable {
 			}
 
 			// Send to player
-			sender.sendMessage(prefix + "Working on " + operationName + " operation: " + percent
-					+ "% done " + detailedProgress + " " + estimatedTimeLeftString);
+			sender.sendMessage(prefix + "Working on " + operationName + " operation: " + percent + "% done "
+					+ detailedProgress + " " + estimatedTimeLeftString);
 
 			// Update variables to keep track.
 			lastIndex = currentIndex;
 			lastTime = currentTime;
 		}
 	}
-	
+
 	public Location getMin() {
 		return new Location(world, minX, minY, minZ);
 	}
-	
+
 	public String getFileName() {
 		return fileName;
 	}
 
 	static {
 		String bukkitVersion = Bukkit.getVersion();
-		CURRENT_MC_VERSION = bukkitVersion.substring(bukkitVersion.lastIndexOf(' ') + 1,
-				bukkitVersion.indexOf(')'));
+		CURRENT_MC_VERSION = bukkitVersion.substring(bukkitVersion.lastIndexOf(' ') + 1, bukkitVersion.indexOf(')'));
 	}
 }

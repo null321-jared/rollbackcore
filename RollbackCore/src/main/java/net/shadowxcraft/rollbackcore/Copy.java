@@ -71,7 +71,7 @@ public class Copy extends RollbackOperation {
 	private LRUCache<BlockData> cache = new LRUCache<BlockData>(1, 255); // Stores IDs for the BlockData
 	private int count = 0; // Stores the number of blocks in a row
 	private LRUCache<BlockData>.Node lastData = null; // Stores the string representation of the
-													// previous block.
+														// previous block.
 
 	/**
 	 * Used to schedule a copy. This is the legacy constructor. Used by the
@@ -224,7 +224,7 @@ public class Copy extends RollbackOperation {
 		// Creates the file.
 		try {
 			File parent = file.getParentFile();
-			if(parent != null) {
+			if (parent != null) {
 				parent.mkdirs();
 			}
 			file.createNewFile();
@@ -465,7 +465,8 @@ public class Copy extends RollbackOperation {
 			out.write(commandBytes);
 			break;
 		default:
-			Main.plugin.getLogger().warning("Code requested writing of unknown blockstate: " + blockState.getType().toString());
+			Main.plugin.getLogger()
+					.warning("Code requested writing of unknown blockstate: " + blockState.getType().toString());
 			FileUtilities.writeShort(out, 0); // To prevent corruption of the output.
 		}
 	}

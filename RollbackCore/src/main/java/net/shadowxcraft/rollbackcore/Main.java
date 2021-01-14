@@ -52,7 +52,7 @@ public class Main extends JavaPlugin {
 
 			regionsPath = Paths.get(savesPath.toString(), "/regions");
 			Files.createDirectories(regionsPath);
-			
+
 			worldsPath = Paths.get(savesPath.toString(), "/worlds");
 			Files.createDirectories(worldsPath);
 		} catch (IOException e) {

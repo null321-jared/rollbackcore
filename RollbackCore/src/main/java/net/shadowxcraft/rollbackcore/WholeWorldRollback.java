@@ -73,11 +73,16 @@ public class WholeWorldRollback {
 	 * There is no guarantee on the order at which the event will return compared to
 	 * the
 	 * 
-	 * @param worldToRollback
-	 * @param locToSendPlayers
-	 * @param sender
-	 * @param prefix
-	 * @param folderWithBackup
+	 * @param worldToRollback  The world to rollback.
+	 * @param locToSendPlayers The location to send players in the world being
+	 *                         rolled back.
+	 * @param sender           The player to send messages to, or null for no
+	 *                         messages.
+	 * @param prefix           The prefix for sending messages to the player, if
+	 *                         sender is not null.
+	 * @param folderWithBackup The folder where the backup is located. This is the
+	 *                         parent folder to the folder with the world name. Null
+	 *                         for default location (RollbackCore's plugin folder)
 	 * 
 	 * @throws IllegalArgumentException if the send location is in the world being
 	 *                                  rolled back

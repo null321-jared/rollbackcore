@@ -382,7 +382,8 @@ public class Commands implements CommandExecutor {
 				directory = null;
 			}
 			try {
-				WholeWorldRollback.startWholeWorldRollback(worldToRollback, locToSendPlayers, sender, prefix, directory);
+				WholeWorldRollback.startWholeWorldRollback(worldToRollback, locToSendPlayers, sender, prefix,
+						directory);
 				sender.sendMessage(prefix + "World rollback running.");
 			} catch (Exception e) {
 				sender.sendMessage(prefix + "World rollback failed.");

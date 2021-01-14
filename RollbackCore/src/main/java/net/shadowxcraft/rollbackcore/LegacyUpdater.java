@@ -43,7 +43,7 @@ public class LegacyUpdater {
 	public static TreeMap<String, TreeMap<String, Map<Pattern, String>>> getMappings() {
 		return blockDataMappings;
 	}
-	
+
 	public static void loadMappings(final Plugin plugin) {
 		done = false;
 		new BukkitRunnable() {
@@ -74,6 +74,11 @@ public class LegacyUpdater {
 
 	/**
 	 * Gets all maps to go from one version to the other.
+	 * 
+	 * @param from The from version ID as a string
+	 * @param to   The to version ID as a string
+	 * 
+	 * @return A mapping of a pattern that matches the material, to the material ID.
 	 */
 	public static LinkedList<Map<Pattern, String>> getMapping(String from, String to) {
 		// Search through all paths.
@@ -331,7 +336,7 @@ public class LegacyUpdater {
 	 * Updates the blockdata that changes between versions.
 	 * 
 	 * @param fileName     The filename of the
-	 * @param pasteToStart
+	 * @param pasteToStart The paste to start after the file is updated.
 	 */
 	public static void updateModernBlockData(final String fileName, final Paste pasteToStart) {
 		pasteToStart.sender.sendMessage(Main.prefix + "Attempting to update paste \"" + fileName + "\".");
@@ -364,23 +369,23 @@ public class LegacyUpdater {
 						in.close();
 					if (out != null)
 						out.close();
-					
-					if(success) {
+
+					if (success) {
 						if (renameFiles(fileName, inFile, outFile)) {
 							if (pasteToStart != null) {
 								Main.plugin.getServer().getScheduler().runTaskLater(Main.plugin, pasteToStart, 1);
 								if (pasteToStart.sender != null)
 									pasteToStart.sender
 											.sendMessage(pasteToStart.prefix + "Updated sucessfully! Starting paste.");
-	
+
 							}
 						} else {
 							Main.plugin.getLogger().warning("Unable to rename the files after conversion. Aborting.");
 							if (pasteToStart != null) {
 								pasteToStart.end(EndStatus.FAIL_IO_ERROR);
 								if (pasteToStart.sender != null)
-									pasteToStart.sender.sendMessage(
-											pasteToStart.prefix + "Unable to rename the files after conversion. Aborting.");
+									pasteToStart.sender.sendMessage(pasteToStart.prefix
+											+ "Unable to rename the files after conversion. Aborting.");
 							}
 						}
 					} else {
@@ -620,7 +625,7 @@ public class LegacyUpdater {
 	/**
 	 * Asynchronously converts the old file to 1.13.
 	 * 
-	 * @param file         The file that is to be updated.
+	 * @param fileName     The file that is to be updated.
 	 * @param pasteToStart The region that will be run once it is done. Null to
 	 *                     disable.
 	 */

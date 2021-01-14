@@ -25,8 +25,8 @@ public class LRUCache<E> {
 	Node end = null;
 
 	/**
-	 * Creates a new cache that will link the data
-	 * to integer values between and including min and max
+	 * Creates a new cache that will link the data to integer values between and
+	 * including min and max
 	 * 
 	 * @param minValue The min value. Min 0.
 	 * @param maxValue The max value.
@@ -35,10 +35,10 @@ public class LRUCache<E> {
 		if (minValue < 0) {
 			throw new IllegalArgumentException("minValue must be at least 0.");
 		}
-        for(int i = minValue; i <= maxValue; i++) {
-        	unusedValues.add(i);
-        }
-    }
+		for (int i = minValue; i <= maxValue; i++) {
+			unusedValues.add(i);
+		}
+	}
 
 	private void removeFromList(Node n) {
 		if (n.pre != null) {
@@ -67,7 +67,7 @@ public class LRUCache<E> {
 		if (end == null)
 			end = head;
 	}
-	
+
 	public Node get(E key) {
 		Node node = map.get(key);
 		if (node != null) {
@@ -78,10 +78,10 @@ public class LRUCache<E> {
 
 		return null;
 	}
-	
+
 	public int remove(String key) {
 		Node node = map.remove(key);
-		if(node == null) {
+		if (node == null) {
 			throw new NoSuchElementException();
 		} else {
 			removeFromList(node);

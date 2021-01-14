@@ -26,8 +26,8 @@ public class TaskManager {
 	private static int numberOfTasks = 0;
 
 	/**
-	 * Calculates the maximum target time that each running operation should take per tick based on
-	 * the config value and the number of runnning operations.
+	 * Calculates the maximum target time that each running operation should take
+	 * per tick based on the config value and the number of runnning operations.
 	 * 
 	 * @return the number of milliseconds each operation should take.
 	 */

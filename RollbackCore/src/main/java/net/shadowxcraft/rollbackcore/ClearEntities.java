@@ -46,18 +46,16 @@ public class ClearEntities {
 	ClearEntitiesTask task;
 
 	/**
-	 * The constructor for the ClearEntities class, used to clear entities in a region.
+	 * The constructor for the ClearEntities class, used to clear entities in a
+	 * region.
 	 * 
-	 * @param min
-	 *            The min X, Y, and Z of the region.
-	 * @param max
-	 *            The min X, Y, and Z of the region.
-	 * @param allowedEntities
-	 *            A lof of the entities that won't get cleared. Null for default.
-	 * @param quick
-	 *            If the clear will be quick. A quick clear only clears loaded chunks in the region.
-	 * @throws IllegalArgumentException
-	 *             If the worlds are not the same.
+	 * @param min             The min X, Y, and Z of the region.
+	 * @param max             The min X, Y, and Z of the region.
+	 * @param allowedEntities A lof of the entities that won't get cleared. Null for
+	 *                        default.
+	 * @param quick           If the clear will be quick. A quick clear only clears
+	 *                        loaded chunks in the region.
+	 * @throws IllegalArgumentException If the worlds are not the same.
 	 */
 	public ClearEntities(Location min, Location max, List<EntityType> allowedEntities, boolean quick)
 			throws IllegalArgumentException {
@@ -202,10 +200,10 @@ class ClearEntitiesTask extends BukkitRunnable {
 		// Clears all of its entities.
 		clearEntitiesInChunk(chunk);
 
-		if(!wasLoaded) {
+		if (!wasLoaded) {
 			chunk.unload();
 		}
-		
+
 		// Updates X and Z.
 		tempZ += CHUNK_SIZE;
 
