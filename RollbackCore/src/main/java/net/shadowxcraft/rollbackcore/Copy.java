@@ -59,9 +59,12 @@ public class Copy extends RollbackOperation {
 	private File file;
 	private long startTime = -1l;
 	private static final List<Copy> runningCopies = new ArrayList<Copy>();
-	private static EnumSet<Material> specialBlockStates = EnumSet.of(Material.SIGN, Material.WALL_SIGN,
-			Material.PLAYER_HEAD, Material.PLAYER_WALL_HEAD, Material.COMMAND_BLOCK, Material.CHAIN_COMMAND_BLOCK,
-			Material.REPEATING_COMMAND_BLOCK);
+	static EnumSet<Material> specialBlockStates = EnumSet.of(Material.OAK_WALL_SIGN, Material.SPRUCE_WALL_SIGN,
+			Material.BIRCH_WALL_SIGN, Material.ACACIA_WALL_SIGN, Material.JUNGLE_WALL_SIGN, Material.DARK_OAK_WALL_SIGN,
+			Material.CRIMSON_WALL_SIGN, Material.WARPED_WALL_SIGN, Material.OAK_SIGN, Material.SPRUCE_SIGN,
+			Material.BIRCH_SIGN, Material.JUNGLE_SIGN, Material.ACACIA_SIGN, Material.DARK_OAK_SIGN,
+			Material.CRIMSON_SIGN, Material.WARPED_SIGN, Material.PLAYER_HEAD, Material.PLAYER_WALL_HEAD,
+			Material.COMMAND_BLOCK, Material.CHAIN_COMMAND_BLOCK, Material.REPEATING_COMMAND_BLOCK);
 	boolean inProgress = false;
 
 	// Specific to the operation at hand.
@@ -416,9 +419,25 @@ public class Copy extends RollbackOperation {
 	}
 
 	static final void writeBlockState(OutputStream out, BlockState blockState) throws IOException {
+
+		// getSimpleName
 		switch (blockState.getType()) {
-		case WALL_SIGN:
-		case SIGN:
+		case OAK_WALL_SIGN:
+		case SPRUCE_WALL_SIGN:
+		case BIRCH_WALL_SIGN:
+		case ACACIA_WALL_SIGN:
+		case JUNGLE_WALL_SIGN:
+		case DARK_OAK_WALL_SIGN:
+		case CRIMSON_WALL_SIGN:
+		case WARPED_WALL_SIGN:
+		case OAK_SIGN:
+		case SPRUCE_SIGN:
+		case BIRCH_SIGN:
+		case JUNGLE_SIGN:
+		case ACACIA_SIGN:
+		case DARK_OAK_SIGN:
+		case CRIMSON_SIGN:
+		case WARPED_SIGN:
 			Sign sign = (Sign) blockState;
 			try {
 				String allLines = sign.getLine(0);

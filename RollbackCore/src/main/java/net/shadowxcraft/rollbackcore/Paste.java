@@ -369,7 +369,7 @@ public class Paste extends RollbackOperation {
 		boolean skip = false; // To know when to quit the loop for that tick.
 
 		while (!skip && inProgress) {
-			for (int i = 0; inProgress && i < 500; i++) {
+			for (int i = 0; inProgress && i < 250; i++) {
 				nextBlock();
 				if (tempX > maxX) {
 					end(EndStatus.SUCCESS);
@@ -459,8 +459,22 @@ public class Paste extends RollbackOperation {
 		try {
 			int length = FileUtilities.readShort(in);
 			switch (lastData.data.getMaterial()) {
-			case WALL_SIGN:
-			case SIGN:
+			case OAK_WALL_SIGN:
+			case SPRUCE_WALL_SIGN:
+			case BIRCH_WALL_SIGN:
+			case ACACIA_WALL_SIGN:
+			case JUNGLE_WALL_SIGN:
+			case DARK_OAK_WALL_SIGN:
+			case CRIMSON_WALL_SIGN:
+			case WARPED_WALL_SIGN:
+			case OAK_SIGN:
+			case SPRUCE_SIGN:
+			case BIRCH_SIGN:
+			case JUNGLE_SIGN:
+			case ACACIA_SIGN:
+			case DARK_OAK_SIGN:
+			case CRIMSON_SIGN:
+			case WARPED_SIGN:
 				Sign sign = (Sign) block.getState();
 				String allLines = FileUtilities.readShortString(in, bytes);
 				String[] lines = allLines.split("\\n");

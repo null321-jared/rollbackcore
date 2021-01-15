@@ -422,7 +422,7 @@ public class WatchDogRegion {
 			try {
 				if (id == null) {
 					Material material = data.getMaterial();
-					id = cache.add(data, material == Material.SIGN || material == Material.WALL_SIGN);
+					id = cache.add(data, Copy.specialBlockStates.contains(material));
 					// New block.
 
 					String dataAsString = data.getAsString();
@@ -653,8 +653,22 @@ class ImportOperation extends BukkitRunnable {
 	private void addExtaData(BlockCache<BlockData> data, BlockState state) throws IOException {
 		int length = FileUtilities.readShort(in);
 		switch (data.data.getMaterial()) {
-		case WALL_SIGN:
-		case SIGN:
+		case OAK_WALL_SIGN:
+		case SPRUCE_WALL_SIGN:
+		case BIRCH_WALL_SIGN:
+		case ACACIA_WALL_SIGN:
+		case JUNGLE_WALL_SIGN:
+		case DARK_OAK_WALL_SIGN:
+		case CRIMSON_WALL_SIGN:
+		case WARPED_WALL_SIGN:
+		case OAK_SIGN:
+		case SPRUCE_SIGN:
+		case BIRCH_SIGN:
+		case JUNGLE_SIGN:
+		case ACACIA_SIGN:
+		case DARK_OAK_SIGN:
+		case CRIMSON_SIGN:
+		case WARPED_SIGN:
 			Sign sign = (Sign) state;
 			String allLines = FileUtilities.readShortString(in, bytes);
 			String[] lines = allLines.split("\\n");
