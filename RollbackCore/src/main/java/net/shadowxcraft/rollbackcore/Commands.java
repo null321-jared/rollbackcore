@@ -164,13 +164,15 @@ public class Commands implements CommandExecutor {
 			WatchDogRegion.playerRollback(sender);
 		} else if (args.length == 2 && args[1].equalsIgnoreCase("create")) {
 			WatchDogRegion.playerCreateWatchDog((Player) sender);
+		} else if (args.length == 2 && args[1].equalsIgnoreCase("remove")) {
+			WatchDogRegion.playerRemove(sender);
 		} else if (args.length == 3 && args[1].equalsIgnoreCase("export")) {
 			WatchDogRegion.playerExport(sender, args[2]);
 		} else if (args.length == 3 && args[1].equalsIgnoreCase("import")) {
 			sender.sendMessage(prefix + "Importing...");
 			WatchDogRegion.importWatchDog(args[2], sender, Main.prefix);
 		} else {
-			sender.sendMessage(prefix + "Usage: /rollback watchdog <rollback|create|import|export>");
+			sender.sendMessage(prefix + "Usage: /rollback watchdog <rollback|create|remove|import|export>");
 		}
 	}
 
@@ -401,7 +403,8 @@ public class Commands implements CommandExecutor {
 		sender.sendMessage(ChatColor.GRAY + "/rollback reload | Reloads the plugin's config.");
 		sender.sendMessage(ChatColor.GRAY + "/rollback copy | The copy commands.");
 		sender.sendMessage(ChatColor.GRAY + "/rollback paste | The paste commands.");
-		sender.sendMessage(ChatColor.GRAY + "/rollback watchdog <create|rollback> | The watchdog region commands.");
+		sender.sendMessage(ChatColor.GRAY + "/rollback watchdog <create|rollback|export|import|remove> | "
+				+ "The watchdog region commands.");
 		sender.sendMessage(ChatColor.GRAY
 				+ "/rollback <rollbackregion|addregion> <name> | Used for integration with minigame plugins.");
 		sender.sendMessage(ChatColor.GRAY + "/rollback worldbackup <worldname> [folder to put it] |"
@@ -410,6 +413,7 @@ public class Commands implements CommandExecutor {
 				+ "/rollback worldrollback <worldname> <to-worldname> [<to-x> <to-y> <to-z>] [folder name]|"
 				+ " Rollbacks the world. The \"to-\" world is the world players should be teleported to."
 				+ " May not work on the main world.");
+		sender.sendMessage("Version: " + Main.plugin.getServer().getVersion());
 		sender.sendMessage(ChatColor.GRAY + "----------------------------------------------------");
 	}
 

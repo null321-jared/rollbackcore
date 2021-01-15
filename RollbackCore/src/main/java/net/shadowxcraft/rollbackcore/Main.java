@@ -34,6 +34,7 @@ public class Main extends JavaPlugin {
 
 	public static JavaPlugin plugin;
 	public static Path savesPath;
+	public static Path watchDogRegionsPath;
 	public static Path regionsPath;
 	public static Path worldsPath;
 	Metrics metrics;
@@ -45,18 +46,19 @@ public class Main extends JavaPlugin {
 		// Register the rollback command
 		getCommand("rollback").setExecutor(new Commands(this, prefix));
 		getServer().getPluginManager().registerEvents(new BukkitListener(), plugin);
-
+		
 		try {
-			savesPath = Paths.get(getDataFolder().getAbsolutePath(), "/saves");
+			savesPath = Paths.get(getDataFolder().getAbsolutePath(), "/saves/");
+			regionsPath = Paths.get(savesPath.toString(), "/regions/");
+			watchDogRegionsPath = Paths.get(savesPath.toString(), "/watchdog_backups/");
+			worldsPath = Paths.get(savesPath.toString(), "/worlds/");
 			Files.createDirectories(savesPath);
-
-			regionsPath = Paths.get(savesPath.toString(), "/regions");
 			Files.createDirectories(regionsPath);
-
-			worldsPath = Paths.get(savesPath.toString(), "/worlds");
+			Files.createDirectories(watchDogRegionsPath);
 			Files.createDirectories(worldsPath);
 		} catch (IOException e) {
-			// Failed to submit the stats :-(
+			// Failed to create the directories
+			this.getLogger().severe("Could not create the saves directories"); 
 		}
 		Config.loadConfigs(plugin);
 		LegacyUpdater.loadMappings(this);

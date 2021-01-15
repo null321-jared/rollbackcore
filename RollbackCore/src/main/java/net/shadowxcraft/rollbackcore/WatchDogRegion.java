@@ -245,6 +245,7 @@ public class WatchDogRegion {
 						else
 							// In case they are in several WD regions.
 							watchDog.export(fileName + count);
+						sender.sendMessage(watchDog.prefix + "Watchdog export complete.");
 					} catch (IOException e) {
 						sender.sendMessage(watchDog.prefix + "Failed.");
 						e.printStackTrace();
@@ -253,6 +254,28 @@ public class WatchDogRegion {
 			}
 			if (count == 0) {
 				sender.sendMessage(Main.prefix + "You are not in a WatchDog region!");
+			}
+		} else {
+			sender.sendMessage(Main.prefix + "Only players can use this command!");
+		}
+	}
+
+	/**
+	 * Used to allow a player to export the watchdog(s) the player is in.
+	 * 
+	 * @param sender   The CommandSender that is issuing the command. Should be a
+	 *                 player.
+	 */
+	public final static void playerRemove(CommandSender sender) {
+		if (sender instanceof Player) {
+			Player player = (Player) sender;
+
+			// Checks every watchdog region to see if the player is in it.
+			for (WatchDogRegion watchDog : watchDogs) {
+				if (watchDog.isInRegion(player.getLocation())) {
+					watchDog.remove();
+					sender.sendMessage(watchDog.prefix + "Removed region from " + watchDog.min + " to " + watchDog.max);
+				}
 			}
 		} else {
 			sender.sendMessage(Main.prefix + "Only players can use this command!");
@@ -397,10 +420,18 @@ public class WatchDogRegion {
 	 */
 	public final void export(String fileName) throws IOException {
 		final short VERSION = 2;
+		
+		// process file name
+		if (!fileName.contains(".")) {
+			fileName += ".wdbackup";
+			if (!fileName.contains("/") && !fileName.contains("\\")) {
+				fileName = Main.watchDogRegionsPath.toString() + "/" + fileName;
+			}
+		}
 
 		LRUCache<BlockData> cache = new LRUCache<BlockData>(1, 255);
 		BufferedOutputStream out;
-		File file = new File(fileName + ".wdbackup");
+		File file = new File(fileName);
 		file.createNewFile();
 		file.mkdirs();
 		out = new BufferedOutputStream(new FileOutputStream(file));
@@ -470,7 +501,14 @@ public class WatchDogRegion {
 	 * @return The region that will be importing into.
 	 */
 	public final static WatchDogRegion importWatchDog(String fileName, CommandSender sender, String prefix) {
-		File file = new File(fileName + ".wdbackup");
+		// Process file name
+		if (!fileName.contains(".")) {
+			fileName += ".wdbackup";
+			if (!fileName.contains("/") && !fileName.contains("\\")) {
+				fileName = Main.watchDogRegionsPath.toString() + "/" + fileName;
+			}
+		}
+		File file = new File(fileName);
 		BufferedInputStream in = null;
 		int worldNameLength;
 		String worldName = "";

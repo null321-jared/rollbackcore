@@ -128,7 +128,7 @@ public class Paste extends RollbackOperation {
 		if (!fileName.contains(".")) {
 			fileName += ".dat";
 			if (!fileName.contains("/") || !fileName.contains("\\")) {
-				fileName = Main.plugin.getDataFolder().getAbsolutePath() + "/saves/" + fileName;
+				fileName = Main.savesPath.toString() + "/" + fileName;
 			}
 		}
 		this.fileName = fileName;
