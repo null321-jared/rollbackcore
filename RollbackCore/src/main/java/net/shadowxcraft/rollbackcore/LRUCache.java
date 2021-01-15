@@ -29,7 +29,7 @@ public class LRUCache<E> {
 	 * including min and max
 	 * 
 	 * @param minValue The min value. Min 0.
-	 * @param maxValue The max value.
+	 * @param maxValue The max value, inclusive.
 	 */
 	public LRUCache(int minValue, int maxValue) {
 		if (minValue < 0) {
