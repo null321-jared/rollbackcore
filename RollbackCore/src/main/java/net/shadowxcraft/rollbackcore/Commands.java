@@ -413,7 +413,6 @@ public class Commands implements CommandExecutor {
 				+ "/rollback worldrollback <worldname> <to-worldname> [<to-x> <to-y> <to-z>] [folder name]|"
 				+ " Rollbacks the world. The \"to-\" world is the world players should be teleported to."
 				+ " May not work on the main world.");
-		sender.sendMessage("Version: " + Main.plugin.getServer().getVersion());
 		sender.sendMessage(ChatColor.GRAY + "----------------------------------------------------");
 	}
 

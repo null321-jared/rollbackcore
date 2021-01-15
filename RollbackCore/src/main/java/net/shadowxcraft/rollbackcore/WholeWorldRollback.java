@@ -197,7 +197,7 @@ public class WholeWorldRollback {
 		Files.walkFileTree(sourcePath.toPath(), new CopyFileVisitor(targetPath.toPath()));
 	}
 
-	public static class CopyFileVisitor extends SimpleFileVisitor<Path> {
+	private static class CopyFileVisitor extends SimpleFileVisitor<Path> {
 		private final Path targetPath;
 		private Path sourcePath = null;
 
