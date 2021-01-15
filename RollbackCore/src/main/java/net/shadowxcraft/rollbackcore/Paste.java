@@ -458,23 +458,7 @@ public class Paste extends RollbackOperation {
 	private final void updateBlockState(Block block) {
 		try {
 			int length = FileUtilities.readShort(in);
-			switch (lastData.data.getMaterial()) {
-			case OAK_WALL_SIGN:
-			case SPRUCE_WALL_SIGN:
-			case BIRCH_WALL_SIGN:
-			case ACACIA_WALL_SIGN:
-			case JUNGLE_WALL_SIGN:
-			case DARK_OAK_WALL_SIGN:
-			case CRIMSON_WALL_SIGN:
-			case WARPED_WALL_SIGN:
-			case OAK_SIGN:
-			case SPRUCE_SIGN:
-			case BIRCH_SIGN:
-			case JUNGLE_SIGN:
-			case ACACIA_SIGN:
-			case DARK_OAK_SIGN:
-			case CRIMSON_SIGN:
-			case WARPED_SIGN:
+			if (isSign(lastData.data.getMaterial())) {
 				Sign sign = (Sign) block.getState();
 				String allLines = FileUtilities.readShortString(in, bytes);
 				String[] lines = allLines.split("\\n");
@@ -483,45 +467,47 @@ public class Paste extends RollbackOperation {
 					sign.setLine(i, lines[i]);
 				}
 				sign.update(true, false);
-				break;
-			case PLAYER_HEAD:
-			case PLAYER_WALL_HEAD:
-				Skull skull = (Skull) block.getState();
-				if (in.read() > 0) { // Has owner
-					UUID uuid = UUID.fromString(FileUtilities.readShortString(in));
-					skull.setOwningPlayer(Bukkit.getOfflinePlayer(uuid));
-					skull.update(true, false);
-				} else {
-					if (skull.hasOwner()) {
-						// Set to steve
-						skull.setOwningPlayer(
-								Bukkit.getOfflinePlayer(UUID.fromString("8667ba71-b85a-4004-af54-457a9734eed7")));
+			} else {
+				switch (lastData.data.getMaterial()) {
+				case PLAYER_HEAD:
+				case PLAYER_WALL_HEAD:
+					Skull skull = (Skull) block.getState();
+					if (in.read() > 0) { // Has owner
+						UUID uuid = UUID.fromString(FileUtilities.readShortString(in));
+						skull.setOwningPlayer(Bukkit.getOfflinePlayer(uuid));
 						skull.update(true, false);
+					} else {
+						if (skull.hasOwner()) {
+							// Set to steve
+							skull.setOwningPlayer(
+									Bukkit.getOfflinePlayer(UUID.fromString("8667ba71-b85a-4004-af54-457a9734eed7")));
+							skull.update(true, false);
+						}
 					}
+					break;
+				case COMMAND_BLOCK:
+				case CHAIN_COMMAND_BLOCK:
+				case REPEATING_COMMAND_BLOCK:
+					CommandBlock cBlock = (CommandBlock) block.getState();
+	
+					int nameLength = FileUtilities.readShort(in);
+					String name = FileUtilities.readString(in, nameLength);
+					int commandLength = FileUtilities.readShort(in);
+					String command = FileUtilities.readString(in, commandLength);
+	
+					if (cBlock.getName() != name || cBlock.getCommand() != command) {
+						cBlock.setName(name);
+						cBlock.setCommand(command);
+						cBlock.update();
+					}
+	
+					break;
+				default:
+					Main.plugin.getLogger().warning(
+							"File specifies blockstate data, but RollbackCore does not know how to interpret it. Skipping.");
+					in.skip(length); // To ensure it moves forward as it should.
+					break;
 				}
-				break;
-			case COMMAND_BLOCK:
-			case CHAIN_COMMAND_BLOCK:
-			case REPEATING_COMMAND_BLOCK:
-				CommandBlock cBlock = (CommandBlock) block.getState();
-
-				int nameLength = FileUtilities.readShort(in);
-				String name = FileUtilities.readString(in, nameLength);
-				int commandLength = FileUtilities.readShort(in);
-				String command = FileUtilities.readString(in, commandLength);
-
-				if (cBlock.getName() != name || cBlock.getCommand() != command) {
-					cBlock.setName(name);
-					cBlock.setCommand(command);
-					cBlock.update();
-				}
-
-				break;
-			default:
-				Main.plugin.getLogger().warning(
-						"File specifies blockstate data, but RollbackCore does not know how to interpret it. Skipping.");
-				in.skip(length); // To ensure it moves forward as it should.
-				break;
 			}
 		} catch (IOException e) {
 			e.printStackTrace();

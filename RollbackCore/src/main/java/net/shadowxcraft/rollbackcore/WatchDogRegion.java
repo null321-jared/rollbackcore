@@ -34,6 +34,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -42,7 +43,9 @@ import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockState;
+import org.bukkit.block.CommandBlock;
 import org.bukkit.block.Sign;
+import org.bukkit.block.Skull;
 import org.bukkit.block.data.BlockData;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
@@ -422,7 +425,7 @@ public class WatchDogRegion {
 			try {
 				if (id == null) {
 					Material material = data.getMaterial();
-					id = cache.add(data, Copy.specialBlockStates.contains(material));
+					id = cache.add(data, RollbackOperation.specialBlockStates.contains(material));
 					// New block.
 
 					String dataAsString = data.getAsString();
@@ -652,23 +655,7 @@ class ImportOperation extends BukkitRunnable {
 
 	private void addExtaData(BlockCache<BlockData> data, BlockState state) throws IOException {
 		int length = FileUtilities.readShort(in);
-		switch (data.data.getMaterial()) {
-		case OAK_WALL_SIGN:
-		case SPRUCE_WALL_SIGN:
-		case BIRCH_WALL_SIGN:
-		case ACACIA_WALL_SIGN:
-		case JUNGLE_WALL_SIGN:
-		case DARK_OAK_WALL_SIGN:
-		case CRIMSON_WALL_SIGN:
-		case WARPED_WALL_SIGN:
-		case OAK_SIGN:
-		case SPRUCE_SIGN:
-		case BIRCH_SIGN:
-		case JUNGLE_SIGN:
-		case ACACIA_SIGN:
-		case DARK_OAK_SIGN:
-		case CRIMSON_SIGN:
-		case WARPED_SIGN:
+		if (RollbackOperation.isSign(data.data.getMaterial())) {
 			Sign sign = (Sign) state;
 			String allLines = FileUtilities.readShortString(in, bytes);
 			String[] lines = allLines.split("\\n");
@@ -676,12 +663,47 @@ class ImportOperation extends BukkitRunnable {
 			for (int i = 0; i < numLines; i++) {
 				sign.setLine(i, lines[i]);
 			}
-			break;
-		default:
-			Main.plugin.getLogger().warning(
-					"File specifies blockstate data, but RollbackCore does not know how to interpret it. Skipping.");
-			in.skip(length); // To ensure it moves forward as it should.
-			break;
+		} else {
+			switch (data.data.getMaterial()) {
+			case PLAYER_HEAD:
+			case PLAYER_WALL_HEAD:
+				Skull skull = (Skull) state;
+				if (in.read() > 0) { // Has owner
+					UUID uuid = UUID.fromString(FileUtilities.readShortString(in));
+					skull.setOwningPlayer(Bukkit.getOfflinePlayer(uuid));
+					skull.update(true, false);
+				} else {
+					if (skull.hasOwner()) {
+						// Set to steve
+						skull.setOwningPlayer(
+								Bukkit.getOfflinePlayer(UUID.fromString("8667ba71-b85a-4004-af54-457a9734eed7")));
+						skull.update(true, false);
+					}
+				}
+				break;
+			case COMMAND_BLOCK:
+			case CHAIN_COMMAND_BLOCK:
+			case REPEATING_COMMAND_BLOCK:
+				CommandBlock cBlock = (CommandBlock) state;
+
+				int nameLength = FileUtilities.readShort(in);
+				String name = FileUtilities.readString(in, nameLength);
+				int commandLength = FileUtilities.readShort(in);
+				String command = FileUtilities.readString(in, commandLength);
+
+				if (cBlock.getName() != name || cBlock.getCommand() != command) {
+					cBlock.setName(name);
+					cBlock.setCommand(command);
+					cBlock.update();
+				}
+
+				break;
+			default:
+				Main.plugin.getLogger().warning(
+						"File specifies blockstate data, but RollbackCore does not know how to interpret it. Skipping.");
+				in.skip(length); // To ensure it moves forward as it should.
+				break;
+			}
 		}
 	}
 

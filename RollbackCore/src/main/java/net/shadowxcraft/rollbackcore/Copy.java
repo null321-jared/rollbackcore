@@ -59,12 +59,6 @@ public class Copy extends RollbackOperation {
 	private File file;
 	private long startTime = -1l;
 	private static final List<Copy> runningCopies = new ArrayList<Copy>();
-	static EnumSet<Material> specialBlockStates = EnumSet.of(Material.OAK_WALL_SIGN, Material.SPRUCE_WALL_SIGN,
-			Material.BIRCH_WALL_SIGN, Material.ACACIA_WALL_SIGN, Material.JUNGLE_WALL_SIGN, Material.DARK_OAK_WALL_SIGN,
-			Material.CRIMSON_WALL_SIGN, Material.WARPED_WALL_SIGN, Material.OAK_SIGN, Material.SPRUCE_SIGN,
-			Material.BIRCH_SIGN, Material.JUNGLE_SIGN, Material.ACACIA_SIGN, Material.DARK_OAK_SIGN,
-			Material.CRIMSON_SIGN, Material.WARPED_SIGN, Material.PLAYER_HEAD, Material.PLAYER_WALL_HEAD,
-			Material.COMMAND_BLOCK, Material.CHAIN_COMMAND_BLOCK, Material.REPEATING_COMMAND_BLOCK);
 	boolean inProgress = false;
 
 	// Specific to the operation at hand.
@@ -420,24 +414,7 @@ public class Copy extends RollbackOperation {
 
 	static final void writeBlockState(OutputStream out, BlockState blockState) throws IOException {
 
-		// getSimpleName
-		switch (blockState.getType()) {
-		case OAK_WALL_SIGN:
-		case SPRUCE_WALL_SIGN:
-		case BIRCH_WALL_SIGN:
-		case ACACIA_WALL_SIGN:
-		case JUNGLE_WALL_SIGN:
-		case DARK_OAK_WALL_SIGN:
-		case CRIMSON_WALL_SIGN:
-		case WARPED_WALL_SIGN:
-		case OAK_SIGN:
-		case SPRUCE_SIGN:
-		case BIRCH_SIGN:
-		case JUNGLE_SIGN:
-		case ACACIA_SIGN:
-		case DARK_OAK_SIGN:
-		case CRIMSON_SIGN:
-		case WARPED_SIGN:
+		if (isSign(blockState.getType())) {
 			Sign sign = (Sign) blockState;
 			try {
 				String allLines = sign.getLine(0);
@@ -452,41 +429,42 @@ public class Copy extends RollbackOperation {
 				e.printStackTrace();
 				FileUtilities.writeShort(out, 0); // To prevent corruption of the output.
 			}
-			break;
-
-		case PLAYER_HEAD:
-		case PLAYER_WALL_HEAD:
-			Skull head = (Skull) blockState;
-			if (head.hasOwner()) {
-				byte[] bytes = head.getOwningPlayer().getUniqueId().toString().getBytes(StandardCharsets.UTF_8);
-				// Plus two to account for the owner byte and the length byte
-				FileUtilities.writeShort(out, bytes.length + 2);
-				out.write(1); // 1 == has owner
-				out.write(bytes.length); // assumed less than 256 because UUIDs are of fixed length.
-				out.write(bytes);
-			} else {
-				FileUtilities.writeShort(out, 1);
-				out.write(0); // 0 == has no owner
+		} else {
+			switch (blockState.getType()) {
+			case PLAYER_HEAD:
+			case PLAYER_WALL_HEAD:
+				Skull head = (Skull) blockState;
+				if (head.hasOwner()) {
+					byte[] bytes = head.getOwningPlayer().getUniqueId().toString().getBytes(StandardCharsets.UTF_8);
+					// Plus two to account for the owner byte and the length byte
+					FileUtilities.writeShort(out, bytes.length + 2);
+					out.write(1); // 1 == has owner
+					out.write(bytes.length); // assumed less than 256 because UUIDs are of fixed length.
+					out.write(bytes);
+				} else {
+					FileUtilities.writeShort(out, 1);
+					out.write(0); // 0 == has no owner
+				}
+				break;
+			case COMMAND_BLOCK:
+			case CHAIN_COMMAND_BLOCK:
+			case REPEATING_COMMAND_BLOCK:
+				CommandBlock cBlock = (CommandBlock) blockState;
+				byte[] nameBytes = cBlock.getName().getBytes(StandardCharsets.UTF_8);
+	
+				byte[] commandBytes = cBlock.getCommand().getBytes(StandardCharsets.UTF_8);
+	
+				FileUtilities.writeShort(out, nameBytes.length + commandBytes.length + 4);
+				FileUtilities.writeShort(out, nameBytes.length);
+				out.write(nameBytes);
+				FileUtilities.writeShort(out, commandBytes.length);
+				out.write(commandBytes);
+				break;
+			default:
+				Main.plugin.getLogger()
+						.warning("Code requested writing of unknown blockstate: " + blockState.getType().toString());
+				FileUtilities.writeShort(out, 0); // To prevent corruption of the output.
 			}
-			break;
-		case COMMAND_BLOCK:
-		case CHAIN_COMMAND_BLOCK:
-		case REPEATING_COMMAND_BLOCK:
-			CommandBlock cBlock = (CommandBlock) blockState;
-			byte[] nameBytes = cBlock.getName().getBytes(StandardCharsets.UTF_8);
-
-			byte[] commandBytes = cBlock.getCommand().getBytes(StandardCharsets.UTF_8);
-
-			FileUtilities.writeShort(out, nameBytes.length + commandBytes.length + 4);
-			FileUtilities.writeShort(out, nameBytes.length);
-			out.write(nameBytes);
-			FileUtilities.writeShort(out, commandBytes.length);
-			out.write(commandBytes);
-			break;
-		default:
-			Main.plugin.getLogger()
-					.warning("Code requested writing of unknown blockstate: " + blockState.getType().toString());
-			FileUtilities.writeShort(out, 0); // To prevent corruption of the output.
 		}
 	}
 

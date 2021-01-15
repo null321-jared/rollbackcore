@@ -19,9 +19,14 @@
 
 package net.shadowxcraft.rollbackcore;
 
+import java.util.EnumSet;
+
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.World;
+import org.bukkit.block.data.type.Sign;
+import org.bukkit.block.data.type.WallSign;
 import org.bukkit.command.CommandSender;
 import org.bukkit.scheduler.BukkitTask;
 
@@ -34,6 +39,8 @@ import org.bukkit.scheduler.BukkitTask;
  */
 abstract class RollbackOperation implements Runnable {
 	public static final String CURRENT_MC_VERSION;
+	static final EnumSet<Material> specialBlockStates = EnumSet.of(Material.PLAYER_HEAD, Material.PLAYER_WALL_HEAD,
+			Material.COMMAND_BLOCK, Material.CHAIN_COMMAND_BLOCK, Material.REPEATING_COMMAND_BLOCK);
 
 	protected World world;
 	protected int minX, minY, minZ;
@@ -164,8 +171,31 @@ abstract class RollbackOperation implements Runnable {
 		return fileName;
 	}
 
+	protected static boolean isSign(Material material) {
+		Class<?> materialClass = material.data;
+		return materialClass == Sign.class || materialClass == WallSign.class;
+	}
+
 	static {
 		String bukkitVersion = Bukkit.getVersion();
 		CURRENT_MC_VERSION = bukkitVersion.substring(bukkitVersion.lastIndexOf(' ') + 1, bukkitVersion.indexOf(')'));
+		int majorVersion = Integer.parseInt(CURRENT_MC_VERSION.substring(2, 4));
+		if (majorVersion >= 16) {
+			// Add nether blocks
+			specialBlockStates.add(Material.CRIMSON_SIGN);
+			specialBlockStates.add(Material.WARPED_SIGN);
+			specialBlockStates.add(Material.CRIMSON_WALL_SIGN);
+			specialBlockStates.add(Material.WARPED_WALL_SIGN);
+		}
+		if (majorVersion >= 14) {
+			// Add new signs
+			specialBlockStates.addAll(EnumSet.of(Material.OAK_WALL_SIGN, Material.SPRUCE_WALL_SIGN, Material.BIRCH_WALL_SIGN,
+					Material.ACACIA_WALL_SIGN, Material.JUNGLE_WALL_SIGN, Material.DARK_OAK_WALL_SIGN,
+					Material.OAK_SIGN, Material.SPRUCE_SIGN, Material.BIRCH_SIGN, Material.JUNGLE_SIGN,
+					Material.ACACIA_SIGN, Material.DARK_OAK_SIGN));
+		} else {
+			specialBlockStates.add(Material.valueOf("SIGN"));
+			specialBlockStates.add(Material.valueOf("WALL_SIGN"));
+		}
 	}
 }
