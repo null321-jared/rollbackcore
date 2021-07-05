@@ -17,7 +17,7 @@
 		</repository>
 		<repository>
 			<id>central</id>
-			<url>http://central.maven.org/maven2</url>
+			<url>https://repo.maven.apache.org/maven2</url>
 		</repository>
 		<repository>
 			<id>jitpack.io</id>
@@ -37,7 +37,7 @@
 		<dependency>
 			<groupId>org.spigotmc</groupId>
 			<artifactId>spigot-api</artifactId>
-			<version>1.16.4-R0.1-SNAPSHOT</version>
+			<version>1.16.5-R0.1-SNAPSHOT</version>
 			<scope>provided</scope>
 		</dependency>
 		<!-- Worldedit -->

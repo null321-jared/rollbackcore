@@ -371,7 +371,7 @@ public class LegacyUpdater {
 						out.close();
 
 					if (success) {
-						if (renameFiles(fileName, inFile, outFile)) {
+						if (renameFiles(fileName, inFile, outFile, fromMCVersion)) {
 							if (pasteToStart != null) {
 								Main.plugin.getServer().getScheduler().runTaskLater(Main.plugin, pasteToStart, 1);
 								if (pasteToStart.sender != null)
@@ -646,7 +646,7 @@ public class LegacyUpdater {
 					convertMainData();
 					in.close();
 					out.close();
-					if (renameFiles(fileName, inFile, outFile)) {
+					if (renameFiles(fileName, inFile, outFile, "legacy")) {
 						if (pasteToStart != null) {
 							Main.plugin.getServer().getScheduler().runTaskLater(Main.plugin, pasteToStart, 1);
 							if (pasteToStart.sender != null)
@@ -919,8 +919,8 @@ public class LegacyUpdater {
 	 * 
 	 * @return True if both succeeded. False if either failed.
 	 */
-	static boolean renameFiles(String fileName, File inFile, File outFile) {
-		File newNameForOld = new File(fileName + "_old");
+	static boolean renameFiles(String fileName, File inFile, File outFile, String oldVersion) {
+		File newNameForOld = new File(fileName + "_old_" + oldVersion);
 		if (!inFile.renameTo(newNameForOld))
 			return false;
 
