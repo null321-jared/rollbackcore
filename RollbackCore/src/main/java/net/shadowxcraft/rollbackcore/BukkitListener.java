@@ -21,6 +21,8 @@ package net.shadowxcraft.rollbackcore;
 
 import org.bukkit.Material;
 import org.bukkit.block.Block;
+import org.bukkit.block.BlockState;
+import org.bukkit.event.Event.Result;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -43,6 +45,7 @@ import org.bukkit.event.block.LeavesDecayEvent;
 import org.bukkit.event.entity.EntityChangeBlockEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.world.StructureGrowEvent;
 
 /**
  * This class contains all of the listeners to things that can change a block.
@@ -180,12 +183,21 @@ public class BukkitListener implements Listener {
 			WatchDogRegion.logBlock(event.getBlockReplacedState());
 		}
 	}
+	
+	@EventHandler(priority = EventPriority.MONITOR)
+	public void onStructureGrowEvent(StructureGrowEvent event) {
+		if (!event.isCancelled()) {
+			for (BlockState block : event.getBlocks()) {
+				WatchDogRegion.logBlock(block.getBlock().getState());
+			}
+		}
+	}
 
 	// Events that should be taken care of elsewhere, but for some reason are
 	// not.
 	@EventHandler(priority = EventPriority.MONITOR)
 	public void onPlayerInteract(PlayerInteractEvent event) {
-		if (!event.isCancelled()) {
+		if (event.useInteractedBlock() == Result.ALLOW) {
 			Material mt = event.getMaterial();
 			if (event.getAction().equals(Action.RIGHT_CLICK_BLOCK)) {
 				if (mt.equals(Material.WATER_BUCKET) || mt.equals(Material.LAVA_BUCKET)
