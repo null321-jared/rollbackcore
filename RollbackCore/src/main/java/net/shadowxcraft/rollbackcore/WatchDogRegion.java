@@ -31,9 +31,11 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.LinkedList;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 import org.bukkit.Bukkit;
@@ -78,7 +80,8 @@ import net.shadowxcraft.rollbackcore.events.WDRollbackEndEvent;
 public class WatchDogRegion {
 
 	// Stores all active watchdog regions.
-	private static List<WatchDogRegion> watchDogs = new LinkedList<WatchDogRegion>();
+	static Set<WatchDogRegion> rollbackingWatchDogs = new HashSet<WatchDogRegion>();
+	static Set<WatchDogRegion> activeWatchDogs = new HashSet<WatchDogRegion>();
 	private Location min, max; // The min and max of the region.
 	private int rollbackTask = -1; // The task ID of the running operation.
 	// Where it stores the blocks' data for later repair.
@@ -100,7 +103,7 @@ public class WatchDogRegion {
 		fixCoordinates();
 		this.originalWorldSaveSetting = min.getWorld().isAutoSave();
 		this.prefix = prefix;
-		watchDogs.add(this);
+		activeWatchDogs.add(this);
 	}
 
 	private void fixCoordinates() {
@@ -128,15 +131,14 @@ public class WatchDogRegion {
 	 * @return the number of canceled tasks.
 	 */
 	public static final int cancelAll() {
-		int numberOfTasks = watchDogs.size();
-		for (WatchDogRegion wd : watchDogs)
+		int numberOfTasks = activeWatchDogs.size();
+		for (WatchDogRegion wd : activeWatchDogs)
 			if (wd.rollbackTask != -1) {
 				Bukkit.getScheduler().cancelTask(wd.rollbackTask);
 				new WDRollbackEndEvent(wd, 0, 0, EndStatus.FAIL_EXERNAL_TERMINATION);
 				wd.min.getWorld().setAutoSave(wd.originalWorldSaveSetting);
-				TaskManager.removeTask();
 			}
-		watchDogs.clear();
+		activeWatchDogs.clear();
 		return numberOfTasks;
 	}
 
@@ -147,7 +149,7 @@ public class WatchDogRegion {
 	 * @param state The blockState that should be saved.
 	 */
 	public final static void logBlock(BlockState state) {
-		for (WatchDogRegion watchDog : watchDogs) {
+		for (WatchDogRegion watchDog : activeWatchDogs) {
 			if (watchDog.isInRegion(state.getLocation())) {
 				watchDog.addState(state, state.getLocation());
 			}
@@ -205,7 +207,7 @@ public class WatchDogRegion {
 			int count = 0;
 
 			// Checks every watchdog region to see if the player is in it.
-			for (WatchDogRegion watchDog : watchDogs) {
+			for (WatchDogRegion watchDog : activeWatchDogs) {
 				if (watchDog.isInRegion(player.getLocation())) {
 					count++;
 					sender.sendMessage(Main.prefix + "Detected you are in a region! Rolling back all "
@@ -234,7 +236,7 @@ public class WatchDogRegion {
 			int count = 0;
 
 			// Checks every watchdog region to see if the player is in it.
-			for (WatchDogRegion watchDog : watchDogs) {
+			for (WatchDogRegion watchDog : activeWatchDogs) {
 				if (watchDog.isInRegion(player.getLocation())) {
 					count++;
 					sender.sendMessage(watchDog.prefix + "Detected you are in a region! Exporting all "
@@ -271,7 +273,7 @@ public class WatchDogRegion {
 			Player player = (Player) sender;
 
 			// Checks every watchdog region to see if the player is in it.
-			for (WatchDogRegion watchDog : watchDogs) {
+			for (WatchDogRegion watchDog : activeWatchDogs) {
 				if (watchDog.isInRegion(player.getLocation())) {
 					watchDog.remove();
 					sender.sendMessage(watchDog.prefix + "Removed region from " + watchDog.min + " to " + watchDog.max);
@@ -359,12 +361,11 @@ public class WatchDogRegion {
 		} else {
 			clearing = null;
 		}
-
+		
 		// Disables auto saving to increase performance.
 		min.getWorld().setAutoSave(false);
 		if (size > 0) {
-			TaskManager.addTask();
-
+			rollbackingWatchDogs.add(this);
 			rollbackTask = Main.plugin.getServer().getScheduler().scheduleSyncRepeatingTask(Main.plugin,
 					new Runnable() {
 						int index = 0;
@@ -398,12 +399,12 @@ public class WatchDogRegion {
 							// finishes things up once it completes.
 							if (index >= size) {
 								Bukkit.getScheduler().cancelTask(rollbackTask);
+								rollbackingWatchDogs.remove(WatchDogRegion.this);
 								rollbackTask = -1;
 								min.getWorld().setAutoSave(originalWorldSaveSetting);
 								if (sender != null) {
 									sender.sendMessage(prefix + "Done with rollback!");
 								}
-								TaskManager.removeTask();
 								new WDRollbackEndEvent(wd, System.nanoTime() - beginTime, size, EndStatus.SUCCESS);
 							}
 						}
@@ -546,8 +547,9 @@ public class WatchDogRegion {
 			max = new Location(world, FileUtilities.readInt(in), FileUtilities.readInt(in), FileUtilities.readInt(in));
 
 			// Looks for an existing watchdog that has the same region
-			for (int index = 0; index < watchDogs.size() && exportedTo == null; index++) {
-				tempRegion = watchDogs.get(index);
+			Iterator<WatchDogRegion> itr = activeWatchDogs.iterator();
+			while (itr.hasNext() && exportedTo == null) {
+				tempRegion = itr.next();
 				if (tempRegion.min.equals(min) && tempRegion.max.equals(max))
 					exportedTo = tempRegion;
 			}
@@ -580,7 +582,7 @@ public class WatchDogRegion {
 	}
 
 	public static boolean hasActiveRegion() {
-		return !watchDogs.isEmpty();
+		return !activeWatchDogs.isEmpty();
 	}
 
 	/**
@@ -589,7 +591,7 @@ public class WatchDogRegion {
 	 */
 	public final void remove() {
 		originalStates = null;
-		watchDogs.remove(this);
+		activeWatchDogs.remove(this);
 	}
 
 	public String getPrefix() {
@@ -605,6 +607,7 @@ public class WatchDogRegion {
  */
 class ImportOperation extends BukkitRunnable {
 
+	static Set<ImportOperation> runningImports = new HashSet<ImportOperation>();
 	private InputStream in; // The inputstream the backup is being read from.
 	private Location min; // The max location of the region being imported
 	private Location blockLocation; // A location used in the process.
@@ -622,7 +625,7 @@ class ImportOperation extends BukkitRunnable {
 		this.min = min;
 		this.exportedTo = exportedTo;
 		this.runTaskTimer(Main.plugin, 1, 1);
-		TaskManager.addTask();
+		ImportOperation.runningImports.add(this);
 		this.sender = sender;
 	}
 
@@ -752,10 +755,11 @@ class ImportOperation extends BukkitRunnable {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-		TaskManager.removeTask();
 		new WDImportEndEvent(exportedTo, System.nanoTime() - startTime, blocksImported, endStatus, sender);
 		// Cancels the task because it is done.
 		this.cancel();
+		
+		ImportOperation.runningImports.remove(this);
 
 	}
 

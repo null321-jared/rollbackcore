@@ -12,6 +12,9 @@ Config:
     # GZip is currently unavailable (and is slower)
     # "none" is default because it lowers the chance of data corruption
     compression: "none"
+    # Whether or not the plugin should manually unload chunks.
+    # This may lower ram usage, expecially when the rollback paste is large.
+    unload_chunks: false
   arenas:
     examplearena:
       x: 1

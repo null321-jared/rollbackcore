@@ -53,7 +53,7 @@ import net.shadowxcraft.rollbackcore.events.PasteEndEvent;
  * @author lizardfreak321
  */
 public class Paste extends RollbackOperation {
-	private static final List<Paste> runningPastes = new ArrayList<Paste>();
+	static final List<Paste> runningPastes = new ArrayList<Paste>();
 
 	private int maxX, maxY, maxZ;
 	private int sizeX, sizeY, sizeZ;
@@ -197,7 +197,6 @@ public class Paste extends RollbackOperation {
 		runningPastes.add(this);
 
 		// Schedules the repeating task for the pasting.
-		TaskManager.addTask();
 		task = Bukkit.getScheduler().runTaskTimer(Main.plugin, this, 1, 1);
 		inProgress = true;
 		return true;
@@ -325,7 +324,6 @@ public class Paste extends RollbackOperation {
 		world.setAutoSave(originalWorldSaveSetting);
 
 		inProgress = false;
-		TaskManager.removeTask();
 
 		runningPastes.remove(this);
 		// Closes the resource to close resources.
@@ -369,7 +367,7 @@ public class Paste extends RollbackOperation {
 		boolean skip = false; // To know when to quit the loop for that tick.
 
 		while (!skip && inProgress) {
-			for (int i = 0; inProgress && i < 250; i++) {
+			for (int i = 0; inProgress && i < 16; i++) {
 				nextBlock();
 				if (tempX > maxX) {
 					end(EndStatus.SUCCESS);

@@ -92,30 +92,32 @@ abstract class RollbackOperation implements Runnable {
 	 * @param loc The next location.
 	 */
 	protected void nextLocation(int tempX, int tempZ) {
-		int locChunkX = tempX >> 4;
-		int locChunkZ = tempZ >> 4;
-
-		if (locChunkX != this.lastChunkX) {
-			for (int i = 0; i < this.zChunks; i++) {
-				if (loadedChunks[i]) {
-					// Was loaded.
-					world.unloadChunkRequest(this.lastChunkX, this.minChunkZ + i);
-				} else {
-					// Was not loaded. Assume it is safe to do so, because
-					// unless a player was moving really fast, the chances
-					// of them getting closer to the chunk is very slim.
-
-					// We can't use 'request' because in large tests, they
-					// weren't actually unloaded, leading towards a crash.
-					world.unloadChunk(this.lastChunkX, this.minChunkZ + i, writing);
+		if (Config.unloadChunks) {
+			int locChunkX = tempX >> 4;
+			int locChunkZ = tempZ >> 4;
+	
+			if (locChunkX != this.lastChunkX) {
+				for (int i = 0; i < this.zChunks; i++) {
+					if (loadedChunks[i]) {
+						// Was loaded.
+						world.unloadChunkRequest(this.lastChunkX, this.minChunkZ + i);
+					} else {
+						// Was not loaded. Assume it is safe to do so, because
+						// unless a player was moving really fast, the chances
+						// of them getting closer to the chunk is very slim.
+	
+						// We can't use 'request' because in large tests, they
+						// weren't actually unloaded, leading towards a crash.
+						world.unloadChunk(this.lastChunkX, this.minChunkZ + i, writing);
+					}
 				}
 			}
-		}
-		if (locChunkZ > this.lastChunkZ || locChunkX > this.lastChunkX) {
-			boolean chunkLoaded = world.isChunkLoaded(locChunkX, locChunkZ);
-			loadedChunks[locChunkZ - this.minChunkZ] = chunkLoaded;
-			this.lastChunkX = locChunkX;
-			this.lastChunkZ = locChunkZ;
+			if (locChunkZ > this.lastChunkZ || locChunkX > this.lastChunkX) {
+				boolean chunkLoaded = world.isChunkLoaded(locChunkX, locChunkZ);
+				loadedChunks[locChunkZ - this.minChunkZ] = chunkLoaded;
+				this.lastChunkX = locChunkX;
+				this.lastChunkZ = locChunkZ;
+			}
 		}
 	}
 

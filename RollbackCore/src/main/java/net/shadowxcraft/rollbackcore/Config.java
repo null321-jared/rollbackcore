@@ -52,6 +52,9 @@ public class Config {
 	// Used to store the amount of time all running tasks added up should target
 	// in one tick.
 	public static int targetTime = 25;
+	
+	// Used to store whether the chunks should be unloaded forcefully
+	public static boolean unloadChunks = false;
 
 	// Used to store which compression algorithm (if any) is being used for copies.
 	public static CompressionType compressionType = CompressionType.LZ4;
@@ -69,10 +72,10 @@ public class Config {
 		loadResource(plugin, "config.yml");
 		// Checks the config for any needed changes.
 		checkConfig();
-		// Loads the target time.
+		// Loads the settings
 		Config.targetTime = getTargetTime();
-		// Loads the compression type.
 		Config.compressionType = getCompression();
+		Config.unloadChunks = getUnload();
 		// Alerts user though console.
 		plugin.getLogger().info("Configs loaded!");
 	}
@@ -114,9 +117,14 @@ public class Config {
 			yaml.set("Config.rollback.targettime", 25);
 			changed = true;
 		}
+		
+		if (!yaml.contains("Config.rollback.unload_chunks")) {
+			yaml.set("Config.rollback.unload_chunks", false);
+			changed = true;
+		}
 
 		if (!yaml.contains("Config.rollback.compression")) {
-			yaml.set("Config.rollback.compression", "LZ4");
+			yaml.set("Config.rollback.compression", "NONE");
 			changed = true;
 		}
 
@@ -171,12 +179,12 @@ public class Config {
 
 		return finalizedTargetTime;
 	}
-
+	
 	// Gets Block Rate from the config.
 	private static final CompressionType getCompression() {
 		File file = new File(plugin.getDataFolder() + "/config.yml");
 		YamlConfiguration yaml = YamlConfiguration.loadConfiguration(file);
-
+		
 		// Validates input.
 		String algoritmName = yaml.getString("Config.rollback.compression", null);
 		CompressionType compression;
@@ -196,8 +204,16 @@ public class Config {
 				compression = CompressionType.LZ4;
 			}
 		}
-
+		
 		return compression;
+	}
+
+	// Gets Block Rate from the config.
+	private static final boolean getUnload() {
+		File file = new File(plugin.getDataFolder() + "/config.yml");
+		YamlConfiguration yaml = YamlConfiguration.loadConfiguration(file);
+
+		return yaml.getBoolean("Config.rollback.unload_chunks", false);
 	}
 
 	// WARNING: Case sensitive!

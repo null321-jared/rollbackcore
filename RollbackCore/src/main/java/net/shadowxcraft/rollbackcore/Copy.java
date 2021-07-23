@@ -57,7 +57,7 @@ public class Copy extends RollbackOperation {
 	private OutputStream out;
 	private File file;
 	private long startTime = -1l;
-	private static final List<Copy> runningCopies = new ArrayList<Copy>();
+	static final List<Copy> runningCopies = new ArrayList<Copy>();
 	boolean inProgress = false;
 
 	// Specific to the operation at hand.
@@ -202,7 +202,6 @@ public class Copy extends RollbackOperation {
 		}
 
 		runningCopies.add(this);
-		TaskManager.addTask();
 		task = Bukkit.getScheduler().runTaskTimer(Main.plugin, this, 1, 1);
 		inProgress = true;
 		return true;
@@ -299,8 +298,6 @@ public class Copy extends RollbackOperation {
 	// Ends it with that end status.
 	private final void end(EndStatus endStatus) {
 		inProgress = false;
-
-		TaskManager.removeTask();
 
 		runningCopies.remove(this);
 		// Closes the resource to close resources.
