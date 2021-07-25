@@ -59,6 +59,11 @@
 			<version>1.4</version>
 			<scope>compile</scope>
 		</dependency>
+		<dependency>
+		    <groupId>com.github.SkriptLang</groupId>
+		    <artifactId>Skript</artifactId>
+		    <version>2.5.3</version>
+		</dependency>
 	</dependencies>
 	<build>
 		<plugins>
