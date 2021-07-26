@@ -71,7 +71,9 @@ public class Commands implements CommandExecutor {
 					if (args[0].equalsIgnoreCase("reload")) {
 						reloadCommand(sender);
 					} else if (args[0].equalsIgnoreCase("addarena") || args[0].equalsIgnoreCase("addregion")) {
-						addArenaCommand(sender, args);
+						addRegionCommand(sender, args);
+					} else if (args[0].equalsIgnoreCase("updatearena") || args[0].equalsIgnoreCase("updateregion")) {
+						updateRegionCommand(sender, args);
 					} else if (args[0].equalsIgnoreCase("watchdog")) {
 						watchDogCommand(sender, args);
 					} else if (args[0].equalsIgnoreCase("copy")) {
@@ -80,7 +82,7 @@ public class Commands implements CommandExecutor {
 						pasteCommand(sender, args);
 					} else if (args[0].equalsIgnoreCase("arena") || args[0].equalsIgnoreCase("rollbackregion")
 							|| args[0].equalsIgnoreCase("region")) {
-						arenaRollackCommand(sender, args);
+						regionRollackCommand(sender, args);
 					} else if (args[0].equalsIgnoreCase("help")) {
 						helpCommand(sender);
 					} else if (args[0].equalsIgnoreCase("cancel") || args[0].equalsIgnoreCase("cancelall")) {
@@ -146,16 +148,50 @@ public class Commands implements CommandExecutor {
 		sender.sendMessage(prefix + "Reloaded!");
 	}
 
-	private final void addArenaCommand(CommandSender sender, String[] args) {
+	private final void addRegionCommand(CommandSender sender, String[] args) {
 		// addarena command.
 		if (!(sender instanceof ConsoleCommandSender)) {
 			if (args.length == 2) {
 				Rollback.copy((Player) sender, args[1], true);
 			} else {
-				sender.sendMessage(prefix + "Usage: /rollback addarena <name>");
+				sender.sendMessage(prefix + "Usage: /rollback addregion <name>");
 			}
 		} else {
 			sender.sendMessage(prefix + "Only players can issue this command!");
+		}
+	}
+	
+
+	/**
+	 * This method is for copying a region that is pre-defined.
+	 * @param sender
+	 * @param args
+	 */
+	private final void updateRegionCommand(CommandSender sender, String[] args) {
+		if (args.length >= 2) {
+			
+			String name = args[1];
+			
+			String filePath = Paths.get(Main.regionsPath.toString(), name + ".dat").toString();
+
+			Location min = Config.getRegionMinLocation(name);
+			Location max = Config.getRegionMaxLocation(name);
+			
+			if (max == null) {
+				sender.sendMessage(Main.prefix +
+						"Region does not exist or was saved on an older version." +
+						" Create the region again with \"/rollback addregion\" or ." +
+						" add the sizeX, sizeY, and sizeZ values to the config.");
+						
+				return;
+			}
+			
+			new Copy(min.getBlockX(), min.getBlockY(), min.getBlockZ(), max.getBlockX(), max.getBlockY(),
+					max.getBlockZ(), max.getWorld(), filePath, sender).run();
+			
+			
+		} else {
+			sender.sendMessage(prefix + "Usage: /rollback rollbackregion <arenaname> [-clearEntities -ignoreAir]");
 		}
 	}
 
@@ -279,10 +315,10 @@ public class Commands implements CommandExecutor {
 	}
 
 	@SuppressWarnings("deprecation")
-	private final void arenaRollackCommand(CommandSender sender, String[] args) {
+	private final void regionRollackCommand(CommandSender sender, String[] args) {
 		if (args.length >= 2) {
 
-			Location temp = Config.getArenaLocation(args[1]);
+			Location temp = Config.getRegionMinLocation(args[1]);
 			if (temp.getWorld() != null) {
 				String name = Paths.get(Main.regionsPath.toString(), args[1]).toString();
 

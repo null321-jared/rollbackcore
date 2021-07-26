@@ -90,7 +90,9 @@ public class Rollback {
 				// Used to add an arena to the config for integration with SG.
 				if (addToConf) {
 					if (!Config.setArenaLocation(name, min.getBlockX(), min.getBlockY(), min.getBlockZ(),
-							player.getWorld())) {
+							max.getBlockX() - min.getBlockX() + 1, max.getBlockY() - min.getBlockY() + 1,
+							max.getBlockZ() - min.getBlockZ() + 1, player.getWorld()))
+					{
 						// If this code gets executed, it was unable to save the
 						// YAML.
 						player.sendMessage(
