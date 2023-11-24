@@ -1,3 +1,4 @@
 **/doc
 RollackCore/dependency-reduced-pom.xml
 org.eclipse*.jar
+.idea

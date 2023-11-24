@@ -18,6 +18,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.logging.Logger;
 import java.util.regex.Pattern;
 
 import org.bukkit.configuration.ConfigurationSection;
@@ -37,7 +38,7 @@ public class LegacyUpdater {
 	// First key: to version
 	// Second key: from version
 	// Third key: from blockdata as string
-	// Thirs key's value: to blockdata as string
+	// Third key's value: to blockdata as string
 	private static TreeMap<String, TreeMap<String, Map<Pattern, String>>> blockDataMappings;
 
 	public static TreeMap<String, TreeMap<String, Map<Pattern, String>>> getMappings() {
@@ -282,10 +283,10 @@ public class LegacyUpdater {
 	 * 
 	 * @param configurationSection
 	 */
-	private static void loadModernBlockDataMappings(final Plugin plugin, ConfigurationSection configurationSection) {
+	private static void loadModernBlockDataMappings(final Logger logger, ConfigurationSection configurationSection) {
 		// creates the map if it is null
 		if (blockDataMappings == null) {
-			blockDataMappings = new TreeMap<String, TreeMap<String, Map<Pattern, String>>>();
+			blockDataMappings = new TreeMap<>();
 		}
 
 		// goes through the first level of keys, which are the two versions.
@@ -295,7 +296,7 @@ public class LegacyUpdater {
 			ConfigurationSection fromVersions = configurationSection.getConfigurationSection(toVersion);
 			TreeMap<String, Map<Pattern, String>> toVersionMappings = blockDataMappings.get(toVersionFormatted);
 			if (toVersionMappings == null) {
-				toVersionMappings = new TreeMap<String, Map<Pattern, String>>();
+				toVersionMappings = new TreeMap<>();
 				blockDataMappings.put(toVersionFormatted, toVersionMappings);
 			}
 
@@ -324,7 +325,7 @@ public class LegacyUpdater {
 
 						fromVersionMappings.put(fromPattern, toExpression);
 					} catch (java.lang.ClassCastException e) {
-						plugin.getLogger().warning("Invalid data type for mappings in from version " + fromVersion
+						logger.warning("Invalid data type for mappings in from version " + fromVersion
 								+ ", to version " + toVersion);
 					}
 				}
