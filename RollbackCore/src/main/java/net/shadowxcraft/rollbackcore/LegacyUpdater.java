@@ -263,7 +263,7 @@ public class LegacyUpdater {
 		YamlConfiguration config = new YamlConfiguration();
 		try {
 			config.load(reader);
-			loadModernBlockDataMappings(plugin, config);
+			loadModernMappingsConfig(plugin.getLogger(), config);
 			plugin.getLogger().info("Loaded default blockdata mappings.");
 		} catch (IOException | InvalidConfigurationException e) {
 			plugin.getLogger().warning("Unable to load default mappings! Corrupt jar?");
@@ -274,7 +274,7 @@ public class LegacyUpdater {
 		File file = new File(plugin.getDataFolder() + "/config.yml");
 		YamlConfiguration yaml = YamlConfiguration.loadConfiguration(file);
 		if (yaml.isConfigurationSection("custom-mappings")) {
-			loadModernBlockDataMappings(plugin, yaml.getConfigurationSection("custom-mappings"));
+			loadModernMappingsConfig(plugin.getLogger(), yaml.getConfigurationSection("custom-mappings"));
 		}
 	}
 
@@ -283,7 +283,7 @@ public class LegacyUpdater {
 	 * 
 	 * @param configurationSection
 	 */
-	private static void loadModernBlockDataMappings(final Logger logger, ConfigurationSection configurationSection) {
+	public static void loadModernMappingsConfig(final Logger logger, ConfigurationSection configurationSection) {
 		// creates the map if it is null
 		if (blockDataMappings == null) {
 			blockDataMappings = new TreeMap<>();
