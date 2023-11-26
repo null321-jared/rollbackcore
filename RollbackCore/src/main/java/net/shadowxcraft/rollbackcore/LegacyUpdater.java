@@ -79,7 +79,7 @@ public class LegacyUpdater {
 	 * @param from The from version ID as a string
 	 * @param to   The to version ID as a string
 	 * 
-	 * @return A mapping of a pattern that matches the material, to the material ID.
+	 * @return A list of match and replace patterns for all changed types, or null if unknown mapping.
 	 */
 	public static LinkedList<Map<Pattern, String>> getMapping(String from, String to) {
 		// Search through all paths.
@@ -117,6 +117,22 @@ public class LegacyUpdater {
 			}
 		}
 		return null;
+	}
+
+	/**
+	 * Detects whether or not there are any renames that require remapping from the original version.
+	 * Designed for 1.13+.
+	 *
+	 * @param from The version of the file that may need updating.
+	 * @return True if there are changes that require file updating.
+	 */
+	public static boolean needsUpdate(String from) {
+		Mapping mapping = loadLatestConversion(from);
+		if (mapping == null) {
+			return false;
+		}
+		// If mappings is NOT empty, an update is needed.
+		return !mapping.mappings.isEmpty();
 	}
 
 	/**
@@ -174,8 +190,10 @@ public class LegacyUpdater {
 	/**
 	 * Checks all to versions and returns the latest converstion that goes from
 	 * 'from' to the newest version that is older or equal to the current version.
+	 *
+	 * The current version is detected by the plugin.
 	 * 
-	 * @param from The version that the converstion will map from.
+	 * @param from The version that the conversion will map from.
 	 * @return A mapping object if one is found, else null.
 	 */
 	public static Mapping loadLatestConversion(String from) {
@@ -200,7 +218,7 @@ public class LegacyUpdater {
 	/**
 	 * An object that will update block IDs from one from to another.
 	 */
-	static class Mapping {
+	public static class Mapping {
 		private final String from, to;
 		private final LinkedList<Map<Pattern, String>> mappings;
 
@@ -350,7 +368,7 @@ public class LegacyUpdater {
 			int index = 0;
 			String fromMCVersion = null;
 			Mapping versionMapping;
-			private HashMap<Integer, BlockCache<String>> dataCache = new HashMap<Integer, BlockCache<String>>();
+			private HashMap<Integer, BlockCache<String>> dataCache = new HashMap<>();
 
 			public void run() {
 				waitUntilLoaded(pasteToStart);
@@ -890,7 +908,7 @@ public class LegacyUpdater {
 			}
 
 			// Used in the reading of the stored files.
-			private final String[] getLines() throws IOException {
+			private String[] getLines() throws IOException {
 				// Signs have 4 lines.
 				String lines[] = new String[4];
 				String line;

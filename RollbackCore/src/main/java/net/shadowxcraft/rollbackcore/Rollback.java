@@ -102,16 +102,11 @@ public class Rollback {
 					name = Paths.get(Main.regionsPath.toString(), name + ".dat").toString();
 				}
 
-				// Copies the arena (distributed).
-				// copyDistributed(min.getBlockX(), min.getBlockY(),
-				// min.getBlockZ(), max.getBlockX(), max.getBlockY(),
-				// max.getBlockZ(), player.getWorld(), name, player);
-				new Copy(min.getBlockX(), min.getBlockY(), min.getBlockZ(), max.getBlockX(), max.getBlockY(),
-						max.getBlockZ(), player.getWorld(), name, player).run();
-
 				// Notify the player it's starting at those coordinates.
 				player.sendMessage(
 						Main.prefix + "Starting! " + min.getBlockX() + " " + min.getBlockY() + " " + min.getBlockZ());
+				new Copy(min.getBlockX(), min.getBlockY(), min.getBlockZ(), max.getBlockX(), max.getBlockY(),
+						max.getBlockZ(), player.getWorld(), name, player).run();
 			} else {
 				// This means there was no selection, so it skips copying and tells
 				// the player.

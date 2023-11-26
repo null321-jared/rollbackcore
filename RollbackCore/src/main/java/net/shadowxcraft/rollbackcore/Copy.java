@@ -53,7 +53,6 @@ import net.shadowxcraft.rollbackcore.events.EndStatus;
  * @author lizardfreak321
  */
 public class Copy extends RollbackOperation {
-	private int maxX, maxY, maxZ;
 	private OutputStream out;
 	private File file;
 	private long startTime = -1l;
@@ -62,8 +61,7 @@ public class Copy extends RollbackOperation {
 
 	// Specific to the operation at hand.
 	long tick = 0; // Used to keep track of how many ticks the copy operation has run.
-	long blockIndex = 0, lastIndex = 0;// Used to store the index of the block, for statistical
-										// reasons.
+
 	private LRUCache<BlockData> cache = new LRUCache<BlockData>(1, 255); // Stores IDs for the BlockData
 	private int count = 0; // Stores the number of blocks in a row
 	private LRUCache<BlockData>.Node lastData = null; // Stores the string representation of the
@@ -159,7 +157,7 @@ public class Copy extends RollbackOperation {
 	 * 
 	 * @return The number of operations cancelled.
 	 */
-	public static final int cancelAll() {
+	public static int cancelAll() {
 		int numberOfTasks = runningCopies.size();
 		for (int i = 0; i < numberOfTasks; i++) {
 			runningCopies.get(i).end(EndStatus.FAIL_EXERNAL_TERMINATION);
@@ -208,7 +206,7 @@ public class Copy extends RollbackOperation {
 	}
 
 	// Prepares the file and stream.
-	private final boolean initializeStream() {
+	private boolean initializeStream() {
 		// Initializes the file
 		file = new File(fileName);
 		if (file.exists()) {
@@ -242,7 +240,7 @@ public class Copy extends RollbackOperation {
 	}
 
 	// Writes the initial data- Version, blocks, and size.
-	static final OutputStream startFile(OutputStream out, int diffX, int diffY, int diffZ, String mcVersion)
+	static OutputStream startFile(OutputStream out, int diffX, int diffY, int diffZ, String mcVersion)
 			throws IllegalArgumentException, IOException {
 		// Writes the version so that the plugin can convert/reject incompatible
 		// versions.
@@ -296,7 +294,7 @@ public class Copy extends RollbackOperation {
 	}
 
 	// Ends it with that end status.
-	private final void end(EndStatus endStatus) {
+	private void end(EndStatus endStatus) {
 		inProgress = false;
 
 		runningCopies.remove(this);
@@ -318,7 +316,7 @@ public class Copy extends RollbackOperation {
 
 	// ------------- Task ------------
 
-	private final void copyTask() {
+	private void copyTask() {
 		long startTime = System.currentTimeMillis(); // Used to keep track of time.
 		tick++; // Increments the tick variable.
 
@@ -347,7 +345,7 @@ public class Copy extends RollbackOperation {
 		statusMessage(maxX, maxY, maxZ, blockIndex, tick, "copy");
 	}
 
-	private final void nextBlock() {
+	private void nextBlock() {
 		if (tempY == minY) { // For efficiency.
 			nextLocation(tempX, tempZ);
 		}
@@ -408,7 +406,7 @@ public class Copy extends RollbackOperation {
 
 	}
 
-	static final void writeBlockState(OutputStream out, BlockState blockState) throws IOException {
+	static void writeBlockState(OutputStream out, BlockState blockState) throws IOException {
 
 		if (isSign(blockState.getType())) {
 			Sign sign = (Sign) blockState;
@@ -464,7 +462,7 @@ public class Copy extends RollbackOperation {
 		}
 	}
 
-	private final void writeCount() throws IOException {
+	private void writeCount() throws IOException {
 		if (count != 0) {
 			if (count <= 255) {
 				out.write(count); // Writes the last one's count
@@ -474,27 +472,4 @@ public class Copy extends RollbackOperation {
 			}
 		}
 	}
-
-	private final void updateVariables() {
-		// Updates variables.
-		blockIndex++;
-		// Move Z
-		tempZ++;
-
-		// Wrap Z
-		if (tempZ > maxZ) {
-			tempZ = minZ;
-			// Move Y
-			tempY++;
-
-			// Wrap Y
-			if (tempY > maxY) {
-				tempY = minY;
-
-				// Move X - does not need wrapping
-				tempX += 1;
-			}
-		}
-	}
-
 }

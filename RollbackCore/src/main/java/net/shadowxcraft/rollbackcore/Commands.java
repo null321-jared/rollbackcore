@@ -46,8 +46,8 @@ import net.shadowxcraft.rollbackcore.LegacyUpdater.Mapping;
  * @author lizardfreak321
  */
 public class Commands implements CommandExecutor {
-	private Main plugin;
-	private String prefix;
+	private final Main plugin;
+	private final String prefix;
 
 	public Commands(Main plugin, String prefix) {
 		this.plugin = plugin;
@@ -109,7 +109,7 @@ public class Commands implements CommandExecutor {
 		return true;
 	}
 
-	private final void mappingsCommand(CommandSender sender, String[] args) {
+	private void mappingsCommand(CommandSender sender, String[] args) {
 		if (args.length == 1) {
 			printMappings(sender);
 		} else if (args.length == 2) {
@@ -129,7 +129,7 @@ public class Commands implements CommandExecutor {
 		}
 	}
 
-	private final void printMappings(CommandSender sender) {
+	private void printMappings(CommandSender sender) {
 		TreeMap<String, TreeMap<String, Map<Pattern, String>>> mappings = LegacyUpdater.getMappings();
 		for (Map.Entry<String, TreeMap<String, Map<Pattern, String>>> toEntry : mappings.entrySet()) {
 			sender.sendMessage("Mappings to " + toEntry.getKey() + ":");
@@ -143,12 +143,12 @@ public class Commands implements CommandExecutor {
 		}
 	}
 
-	private final void reloadCommand(CommandSender sender) {
+	private void reloadCommand(CommandSender sender) {
 		Config.loadConfigs(plugin);
 		sender.sendMessage(prefix + "Reloaded!");
 	}
 
-	private final void addRegionCommand(CommandSender sender, String[] args) {
+	private void addRegionCommand(CommandSender sender, String[] args) {
 		// addarena command.
 		if (!(sender instanceof ConsoleCommandSender)) {
 			if (args.length == 2) {
@@ -167,7 +167,7 @@ public class Commands implements CommandExecutor {
 	 * @param sender
 	 * @param args
 	 */
-	private final void updateRegionCommand(CommandSender sender, String[] args) {
+	private void updateRegionCommand(CommandSender sender, String[] args) {
 		if (args.length >= 2) {
 			
 			String name = args[1];
@@ -195,7 +195,7 @@ public class Commands implements CommandExecutor {
 		}
 	}
 
-	private final void watchDogCommand(CommandSender sender, String args[]) {
+	private void watchDogCommand(CommandSender sender, String args[]) {
 		if (args.length == 2 && args[1].equalsIgnoreCase("rollback")) {
 			WatchDogRegion.playerRollback(sender);
 		} else if (args.length == 2 && args[1].equalsIgnoreCase("create")) {
@@ -212,8 +212,8 @@ public class Commands implements CommandExecutor {
 		}
 	}
 
-	private final void pasteCommand(CommandSender sender, String args[]) {
-		Set<String> otherArgs = new HashSet<String>();
+	private void pasteCommand(CommandSender sender, String[] args) {
+		Set<String> otherArgs = new HashSet<>();
 		int lastValidArg = 0;
 		for (int i = args.length - 1; i > 0; i--) {
 			if (args[i].startsWith("-")) {
@@ -286,7 +286,7 @@ public class Commands implements CommandExecutor {
 		new Paste(min, fileName, sender, clearEntities, ignoreAir, prefix).run();
 	}
 
-	private final void copyCommand(CommandSender sender, String args[]) {
+	private void copyCommand(CommandSender sender, String[] args) {
 		if (args.length == 2) {
 			// For /rollback copy <file>
 			// Requires worldedit.
@@ -299,10 +299,14 @@ public class Commands implements CommandExecutor {
 		}
 	}
 
-	private final void chunkCommand(CommandSender sender, String args[]) {
+	private void chunkCommand(CommandSender sender, String args[]) {
 		if (args.length == 4) {
 			// For /rollback chunkloaded <world> <x> <z>
 			World world = Bukkit.getServer().getWorld(args[1]);
+			if (world == null) {
+				sender.sendMessage(prefix + "World '" + args[1] + "' not found.");
+				return;
+			}
 			try {
 				sender.sendMessage(prefix + "Chunk is loaded: "
 						+ world.isChunkLoaded(Integer.parseInt(args[2]), Integer.parseInt(args[3])));
@@ -315,7 +319,7 @@ public class Commands implements CommandExecutor {
 	}
 
 	@SuppressWarnings("deprecation")
-	private final void regionRollackCommand(CommandSender sender, String[] args) {
+	private void regionRollackCommand(CommandSender sender, String[] args) {
 		if (args.length >= 2) {
 
 			Location temp = Config.getRegionMinLocation(args[1]);
@@ -336,11 +340,11 @@ public class Commands implements CommandExecutor {
 					Paste paste = new Paste(temp, name + ".dat", sender, otherArgs.remove("-clearentities"),
 							otherArgs.remove("-ignoreair"), Main.prefix);
 					Bukkit.getScheduler().runTaskLater(Main.plugin, paste, 1);
-					if (otherArgs.size() > 0)
+					if (!otherArgs.isEmpty())
 						sender.sendMessage(
 								Main.prefix + "Unknown args " + otherArgs.toString() + ". Continuing with operation.");
 				} else if (dir.isDirectory()) {
-					if (otherArgs.size() > 0) {
+					if (!otherArgs.isEmpty()) {
 						sender.sendMessage(Main.prefix
 								+ "Args will be ignored due to old save format. Re-save the region to use them.");
 					}
