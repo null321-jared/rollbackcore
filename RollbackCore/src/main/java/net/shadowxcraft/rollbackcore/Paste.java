@@ -55,8 +55,6 @@ import net.shadowxcraft.rollbackcore.events.PasteEndEvent;
 public class Paste extends RollbackOperation {
 	static final List<Paste> runningPastes = new ArrayList<Paste>();
 
-	private int maxX, maxY, maxZ;
-	private int sizeX, sizeY, sizeZ;
 	// Used to store the pastes so that this class can start a new paste in
 	// distributed pastes.
 	private ArrayList<Paste> pastes = null;
@@ -74,7 +72,6 @@ public class Paste extends RollbackOperation {
 	private File file;
 	private long startTime = -1l;
 	boolean inProgress = false;
-	private int copyVersion;
 
 	// Specific to the operation at hand.
 	long tick = 0; // Used to keep track of how many ticks the copy operation has run.
@@ -82,7 +79,7 @@ public class Paste extends RollbackOperation {
 										// statistical reasons.
 	// TODO: Optimize the cache and the loading of the data.
 	// Stores the blockdata for the IDs.
-	private HashMap<Integer, BlockCache<BlockData>> dataCache = new HashMap<Integer, BlockCache<BlockData>>();
+	private final HashMap<Integer, BlockCache<BlockData>> dataCache = new HashMap<Integer, BlockCache<BlockData>>();
 
 	/**
 	 * The legacy constructor for backwards compatibility.
@@ -169,7 +166,7 @@ public class Paste extends RollbackOperation {
 
 	// The internal method to start the copy operation.
 	protected final boolean initPaste() {
-		if (startTime == -1l)
+		if (startTime == -1L)
 			startTime = System.nanoTime();
 		lastTime = startTime;
 		// Checks if there are any currently running pastes of the exact same thing.
@@ -202,7 +199,7 @@ public class Paste extends RollbackOperation {
 		return true;
 	}
 
-	private final boolean initializeFile() {
+	private boolean initializeFile() {
 		// Initializes the file.
 		file = new File(fileName);
 
@@ -223,17 +220,16 @@ public class Paste extends RollbackOperation {
 		return true;
 	}
 
-	private final boolean readFile() {
+	private boolean readFile() {
 		try {
-			// In case the file they are trying to read is in of date or too
-			// new.
-			copyVersion = in.read();
+			// In case the file they are trying to read is in of date or too new.
+			int copyFileFormatVersion = in.read();
 			CompressionType compression = null;
 
-			if (copyVersion > VERSION) {
+			if (copyFileFormatVersion > VERSION) { // Too new
 				end(EndStatus.FAIL_INCOMPATIBLE_VERSION);
 				return false;
-			} else if (copyVersion < VERSION) {
+			} else if (copyFileFormatVersion < VERSION) {
 				// Initializes conversion.
 				in.close();
 				LegacyUpdater.convert(fileName, this);
@@ -246,9 +242,9 @@ public class Paste extends RollbackOperation {
 			}
 
 			// Reads the sizes using readShort because it can be larger than 255
-			sizeX = FileUtilities.readShort(in);
-			sizeY = FileUtilities.readShort(in);
-			sizeZ = FileUtilities.readShort(in);
+			int sizeX = FileUtilities.readShort(in);
+			int sizeY = FileUtilities.readShort(in);
+			int sizeZ = FileUtilities.readShort(in);
 			maxX = minX + sizeX;
 			maxY = minY + sizeY;
 			maxZ = minZ + sizeZ;
@@ -271,12 +267,22 @@ public class Paste extends RollbackOperation {
 				case "minecraft_version":
 					String version = FileUtilities.readString(in, valueLength, bytes);
 					if (!version.equalsIgnoreCase(CURRENT_MC_VERSION)) {
-						Main.plugin.getLogger().warning("File was written in MC version " + version
-								+ ", but you are running " + CURRENT_MC_VERSION);
-						if (!updateFailed) {
-							in.close();
-							LegacyUpdater.updateModernBlockData(fileName, this);
-							return false;
+						// Check to see if an update is even needed.
+						boolean needsUpdate = LegacyUpdater.needsUpdate(version);
+						if (needsUpdate) {
+							this.sender.sendMessage("File was written in MC version " + version
+								+ ", but you are running " + CURRENT_MC_VERSION + ". Updates are required."
+								+ " Attempting an update."
+							);
+							if (!updateFailed) {
+								in.close();
+								LegacyUpdater.updateModernBlockData(fileName, this);
+								return false;
+							}
+						} else {
+							this.sender.sendMessage("File was written in MC version " + version
+									+ ", but you are running " + CURRENT_MC_VERSION + ". No updates are required yet."
+							);
 						}
 					}
 					break;
@@ -402,7 +408,7 @@ public class Paste extends RollbackOperation {
 				if (id == 0) {
 					// New block
 
-					// Reads whether or not there is extra data.
+					// Reads whether there is extra data.
 					boolean hasExtraData = in.read() == 1;
 					// Reads the string.
 					String blockDataString = FileUtilities.readShortString(in, bytes);
@@ -453,7 +459,7 @@ public class Paste extends RollbackOperation {
 		updateVariables();
 	}
 
-	private final void updateBlockState(Block block) {
+	private void updateBlockState(Block block) {
 		try {
 			int length = FileUtilities.readShort(in);
 			if (isSign(lastData.data.getMaterial())) {
@@ -493,7 +499,7 @@ public class Paste extends RollbackOperation {
 					int commandLength = FileUtilities.readShort(in);
 					String command = FileUtilities.readString(in, commandLength);
 	
-					if (cBlock.getName() != name || cBlock.getCommand() != command) {
+					if (!cBlock.getName().equals(name) || !cBlock.getCommand().equals(command)) {
 						cBlock.setName(name);
 						cBlock.setCommand(command);
 						cBlock.update();
@@ -513,27 +519,4 @@ public class Paste extends RollbackOperation {
 		}
 
 	}
-
-	private final void updateVariables() {
-		// Updates variables.
-		blockIndex++;
-		// Move Z
-		tempZ++;
-
-		// Wrap Z
-		if (tempZ > maxZ) {
-			tempZ = minZ;
-			// Move Y
-			tempY++;
-
-			// Wrap Y
-			if (tempY > maxY) {
-				tempY = minY;
-
-				// Move X - does not need wrapping
-				tempX += 1;
-			}
-		}
-	}
-
 }

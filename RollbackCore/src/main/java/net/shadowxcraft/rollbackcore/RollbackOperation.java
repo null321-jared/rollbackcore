@@ -25,7 +25,9 @@ import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
+import org.bukkit.block.data.type.HangingSign;
 import org.bukkit.block.data.type.Sign;
+import org.bukkit.block.data.type.WallHangingSign;
 import org.bukkit.block.data.type.WallSign;
 import org.bukkit.command.CommandSender;
 import org.bukkit.scheduler.BukkitTask;
@@ -44,6 +46,9 @@ abstract class RollbackOperation implements Runnable {
 
 	protected World world;
 	protected int minX, minY, minZ;
+	protected int maxX, maxY, maxZ;
+	long blockIndex = 0;
+	
 	protected int tempX, tempY, tempZ;
 	public CommandSender sender; // The optional sender of messages.
 	public String prefix; // The prefixes used by messages if sender is not null
@@ -84,12 +89,13 @@ abstract class RollbackOperation implements Runnable {
 	 * to the next location.
 	 * 
 	 * IMPORTANT: Call this BEFORE the chunk is accessed to ensure that it knows
-	 * whether or not it was loaded beforehand.
+	 * whether it was loaded beforehand.
 	 * 
 	 * This will store which ones were loaded beforehand, and it will unload the
 	 * ones that are no longer being used by the operation.
 	 * 
-	 * @param loc The next location.
+	 * @param tempX the X location of the block
+	 * @param tempZ the Z location of the block
 	 */
 	protected void nextLocation(int tempX, int tempZ) {
 		if (Config.unloadChunks) {
@@ -131,7 +137,7 @@ abstract class RollbackOperation implements Runnable {
 			int sizeX = maxX - minX + 1;
 			int sizeY = maxY - minY + 1;
 			int sizeZ = maxZ - minZ + 1;
-			long maxBlocks = sizeX * sizeY;
+			long maxBlocks = (long) sizeX * sizeY;
 			maxBlocks *= sizeZ;
 
 			// Calculate percentage remaining
@@ -175,29 +181,57 @@ abstract class RollbackOperation implements Runnable {
 
 	protected static boolean isSign(Material material) {
 		Class<?> materialClass = material.data;
-		return materialClass == Sign.class || materialClass == WallSign.class;
+		return materialClass == Sign.class || materialClass == WallSign.class ||
+				materialClass == HangingSign.class || materialClass == WallHangingSign.class;
 	}
 
 	static {
-		String bukkitVersion = Bukkit.getVersion();
-		CURRENT_MC_VERSION = bukkitVersion.substring(bukkitVersion.lastIndexOf(' ') + 1, bukkitVersion.indexOf(')'));
-		int majorVersion = Integer.parseInt(CURRENT_MC_VERSION.substring(2, 4));
-		if (majorVersion >= 16) {
-			// Add nether blocks
-			specialBlockStates.add(Material.CRIMSON_SIGN);
-			specialBlockStates.add(Material.WARPED_SIGN);
-			specialBlockStates.add(Material.CRIMSON_WALL_SIGN);
-			specialBlockStates.add(Material.WARPED_WALL_SIGN);
-		}
-		if (majorVersion >= 14) {
-			// Add new signs
-			specialBlockStates.addAll(EnumSet.of(Material.OAK_WALL_SIGN, Material.SPRUCE_WALL_SIGN, Material.BIRCH_WALL_SIGN,
-					Material.ACACIA_WALL_SIGN, Material.JUNGLE_WALL_SIGN, Material.DARK_OAK_WALL_SIGN,
-					Material.OAK_SIGN, Material.SPRUCE_SIGN, Material.BIRCH_SIGN, Material.JUNGLE_SIGN,
-					Material.ACACIA_SIGN, Material.DARK_OAK_SIGN));
+		if (isJUnitTest()) {
+			CURRENT_MC_VERSION = "no-version-unittest";
 		} else {
-			specialBlockStates.add(Material.valueOf("SIGN"));
-			specialBlockStates.add(Material.valueOf("WALL_SIGN"));
+			String bukkitVersion = Bukkit.getVersion();
+			CURRENT_MC_VERSION = bukkitVersion.substring(bukkitVersion.lastIndexOf(' ') + 1, bukkitVersion.indexOf(')'));
+		}
+		// Loop through all materials, and add ones that are signs.
+		for (Material type : Material.values()) {
+			if (isSign(type)) {
+				specialBlockStates.add(type);
+			}
+		}
+	}
+
+	public static boolean isJUnitTest() {
+		for (StackTraceElement element : Thread.currentThread().getStackTrace()) {
+			if (element.getClassName().startsWith("org.junit.")) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	protected void updateVariables() {
+		// Updates variables.
+		blockIndex++;
+		updateRaster();
+	}
+
+	private void updateRaster() {
+		// Move Z
+		tempZ++;
+
+		// Wrap Z
+		if (tempZ > maxZ) {
+			tempZ = minZ;
+			// Move Y
+			tempY++;
+
+			// Wrap Y
+			if (tempY > maxY) {
+				tempY = minY;
+
+				// Move X - does not need wrapping
+				tempX += 1;
+			}
 		}
 	}
 }

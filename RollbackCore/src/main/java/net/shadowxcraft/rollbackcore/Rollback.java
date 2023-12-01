@@ -102,16 +102,11 @@ public class Rollback {
 					name = Paths.get(Main.regionsPath.toString(), name + ".dat").toString();
 				}
 
-				// Copies the arena (distributed).
-				// copyDistributed(min.getBlockX(), min.getBlockY(),
-				// min.getBlockZ(), max.getBlockX(), max.getBlockY(),
-				// max.getBlockZ(), player.getWorld(), name, player);
-				new Copy(min.getBlockX(), min.getBlockY(), min.getBlockZ(), max.getBlockX(), max.getBlockY(),
-						max.getBlockZ(), player.getWorld(), name, player).run();
-
 				// Notify the player it's starting at those coordinates.
 				player.sendMessage(
 						Main.prefix + "Starting! " + min.getBlockX() + " " + min.getBlockY() + " " + min.getBlockZ());
+				new Copy(min.getBlockX(), min.getBlockY(), min.getBlockZ(), max.getBlockX(), max.getBlockY(),
+						max.getBlockZ(), player.getWorld(), name, player).run();
 			} else {
 				// This means there was no selection, so it skips copying and tells
 				// the player.
@@ -298,24 +293,36 @@ public class Rollback {
 	}
 
 	static final BlockVector3 getSelectionMin(Player player) {
-		// Uses worldedit to get the player's region.
+		// Uses worldedit to get the player's region. Validate that it's present.
 		WorldEditPlugin worldEditPlugin = null;
 		worldEditPlugin = (WorldEditPlugin) Bukkit.getServer().getPluginManager().getPlugin("WorldEdit");
 		if (worldEditPlugin == null) {
 			player.sendMessage(Main.prefix + "Error with region command! Error: WorldEdit is null.");
+			return null;
 		}
 
-		BukkitPlayer bPlayer = BukkitAdapter.adapt(player);
-		LocalSession session = WorldEdit.getInstance().getSessionManager().get(bPlayer);
+		LocalSession playerSelection = WorldEdit.getInstance().getSessionManager().findByName(player.getName());
+		Region selection;
+		if (playerSelection == null) {
+			player.sendMessage(Main.prefix + "Your selection is null! Cannot proceed.");
+			return null;
+		}
 		try {
-			Region sel = session.getSelection(bPlayer.getWorld());
-			// Checks if they have a selection
-			if (sel instanceof CuboidRegion) {
-				return sel.getMinimumPoint();
-			} else {
+			com.sk89q.worldedit.world.World selectionWorld = playerSelection.getSelectionWorld();
+			if (selectionWorld == null) {
+				player.sendMessage(Main.prefix + "Your selection world is null! Cannot proceed.");
 				return null;
 			}
+			selection = playerSelection.getSelection(selectionWorld);
 		} catch (IncompleteRegionException e) {
+			player.sendMessage(Main.prefix + "Your selection is incomplete! Cannot proceed.");
+			return null;
+		}
+
+		// Checks if they have a selection
+		if (selection instanceof CuboidRegion) {
+			return selection.getMinimumPoint();
+		} else {
 			return null;
 		}
 	}

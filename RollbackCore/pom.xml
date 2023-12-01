@@ -7,8 +7,8 @@
 	<name>RollbackCore</name>
 	<description>Rollbacks arenas.</description>
 	<properties>
-		<maven.compiler.source>1.8</maven.compiler.source>
-		<maven.compiler.target>1.8</maven.compiler.target>
+		<maven.compiler.source>17</maven.compiler.source>
+		<maven.compiler.target>17</maven.compiler.target>
 	</properties>
 	<repositories>
 		<repository>
@@ -20,16 +20,19 @@
 			<url>https://repo.maven.apache.org/maven2</url>
 		</repository>
 		<repository>
-			<id>jitpack.io</id>
-			<url>https://jitpack.io</url>
-		</repository>
-		<repository>
 			<id>CodeMC</id>
 			<url>https://repo.codemc.org/repository/maven-public</url>
 		</repository>
+		<!-- WorldEdit -->
 		<repository>
-			<id>sk89q-repo</id>
-			<url>http://maven.sk89q.com/repo/</url>
+			<id>worldedit-repo</id>
+			<url>https://maven.enginehub.org/repo/</url>
+		</repository>
+		<!-- For Skript -->
+		<repository>
+			<id>skript-releases</id>
+			<name>Skript Repository</name>
+			<url>https://repo.skriptlang.org/releases</url>
 		</repository>
 	</repositories>
 	<dependencies>
@@ -37,14 +40,14 @@
 		<dependency>
 			<groupId>org.spigotmc</groupId>
 			<artifactId>spigot-api</artifactId>
-			<version>1.16.5-R0.1-SNAPSHOT</version>
-			<scope>provided</scope>
+			<version>1.20.1-R0.1-SNAPSHOT</version>
+			<scope>provided test</scope>
 		</dependency>
 		<!-- Worldedit -->
 		<dependency>
 			<groupId>com.sk89q.worldedit</groupId>
 			<artifactId>worldedit-bukkit</artifactId>
-			<version>7.0.0-SNAPSHOT</version>
+			<version>7.3.0-SNAPSHOT</version>
 		</dependency>
 		<!-- https://mvnrepository.com/artifact/org.lz4/lz4-java -->
 		<dependency>
@@ -62,15 +65,34 @@
 		<dependency>
 		    <groupId>com.github.SkriptLang</groupId>
 		    <artifactId>Skript</artifactId>
-		    <version>2.5.3</version>
+		    <version>2.7.2</version>
+		</dependency>
+		<dependency>
+			<!-- This is included in the Spigot jar -->
+			<groupId>com.google.guava</groupId>
+			<artifactId>guava</artifactId>
+			<version>32.1.2-jre</version>
+			<scope>provided</scope>
+		</dependency>
+		<!-- junit 5, unit test -->
+		<dependency>
+			<groupId>org.junit.jupiter</groupId>
+			<artifactId>junit-jupiter</artifactId>
+			<version>5.8.2</version>
+			<scope>test</scope>
 		</dependency>
 	</dependencies>
 	<build>
 		<plugins>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-surefire-plugin</artifactId>
+				<version>2.22.2</version>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-shade-plugin</artifactId>
-				<version>3.1.0</version>
+				<version>3.5.1</version>
 				<configuration>
 					<relocations>
 						<relocation>
@@ -108,5 +130,5 @@
 			</plugin>
 		</plugins>
 	</build>
-	<version>3.6.0-BETA</version>
+	<version>3.6.1</version>
 </project>
