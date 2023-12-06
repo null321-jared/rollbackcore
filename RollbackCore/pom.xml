@@ -40,8 +40,8 @@
 		<dependency>
 			<groupId>org.spigotmc</groupId>
 			<artifactId>spigot-api</artifactId>
-			<version>1.20.1-R0.1-SNAPSHOT</version>
-			<scope>provided test</scope>
+			<version>1.20.3-R0.1-SNAPSHOT</version>
+			<scope>provided</scope>
 		</dependency>
 		<!-- Worldedit -->
 		<dependency>
@@ -130,5 +130,5 @@
 			</plugin>
 		</plugins>
 	</build>
-	<version>3.6.1</version>
+	<version>3.6.2</version>
 </project>
